@@ -1,0 +1,7 @@
+[defaults]
+inventory = {{ warp_project.inventory_path }}
+sudo_user = {{ warp_project.sudo_user }}  # default: root
+
+
+[ssh_connection]
+ssh_args = -o ForwardAgent=yes -o ControlMaster=auto -o ControlPersist=60s
