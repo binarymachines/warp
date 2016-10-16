@@ -1,0 +1,33 @@
+# localdev.yml
+# Ansible script for blocpower server automation in a local environment using a Vagrant Virtualbox Virtual Machine
+#
+---
+- name: install and configure webservers
+  hosts: webservers
+  sudo: yes
+  vars:
+    document_root: /home/vagrant/blocpower/web
+    remote_user: vagrant
+  roles:
+    - webservers
+
+- name: configure Serpentine application servers 
+  hosts: appservers
+  sudo: yes
+  vars:
+    isVBVM: True
+  remote_user: vagrant
+  roles:
+    - appservers
+
+- name: configure UMAP App server
+  hosts: appservers
+  sudo: yes
+  vars:
+    repo_owner: vagrant
+    remote_user: vagrant
+    github_repo_address: github.com/binarymachines/blocpower.git
+    configuration_file: /home/vagrant/blocpower/web/blocpower_vagrant.conf
+    repo_destination: /home/vagrant/blocpower
+  roles:
+    - UMAP

@@ -1,0 +1,4 @@
+---
+dependencies:
+ - {role: appservers , isVBVM: True}
+ - {role: git}

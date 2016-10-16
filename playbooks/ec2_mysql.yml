@@ -1,0 +1,12 @@
+#
+# MySQL playbook
+#
+---
+- name: install MySQL on EC2 hosts
+  hosts:
+        - tag_Name_bpnyc_db_prod
+
+  remote_user: ubuntu
+  sudo: yes
+  roles:
+        - mysql

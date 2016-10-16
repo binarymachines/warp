@@ -1,0 +1,22 @@
+#Launch Instance
+---
+- hosts: localhost
+  connectino: localhost
+  gather_facts: False
+  tasks:
+  	- name: Provision a UMAP EC2
+  	  ec2:
+  	  	key_name: my_key
+  	  	group: staging
+  	  	instance_type: t2.small
+  	  	image: "{{ami_id}}"
+  	  	wait: true
+  	  	exact_count: 1
+  	  	count_tag:
+  	  		Name: UMAP
+  	  	instance_tags:
+  	  		Name: UMAP
+  	  register: ec2
+- name: Add all instance IPs to host group
+  add-host: hostname={{item.public_ip}} groups=ec2hosts
+  with-items: ec2.instances

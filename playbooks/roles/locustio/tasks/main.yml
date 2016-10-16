@@ -1,0 +1,17 @@
+#Set-up Tasks for Locusts on unix systems
+---
+#- name: Install LocustIO dependencies
+#  shell: pip install pyzmq
+
+#Install Python Dev
+- name: Install python dev
+  apt: pkg=python-dev state=installed
+
+#Install LocustIO
+- name: Install LocustIO
+  pip: name=locustio state=present
+
+#copy over locust file
+- name: Copy over Locust Python File
+  copy: src={{locustFile}} dest=/home/vagrant/locustfile.py
+  when: locustFile is defined

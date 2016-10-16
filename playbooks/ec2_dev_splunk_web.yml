@@ -1,0 +1,13 @@
+#ec2_dev_splunk_web.yml
+#
+#
+---
+- name: install and configure monitor server dependencies
+  hosts: tag_Function_monitoring:&tag_Group_general_dev_servers
+  sudo: yes
+  vars:
+    locustFile: "infra/tests/loadTests/sample_locust.py"
+    splunk_connection_host: ip
+  roles:
+    - splunkWebMonitor
+    - locustio

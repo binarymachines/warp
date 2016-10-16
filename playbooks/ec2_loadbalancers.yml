@@ -1,0 +1,9 @@
+- name: install HAproxy on EC2 hosts
+  hosts: 
+        - tag_Group_load_balancers
+
+  remote_user: ubuntu
+  sudo: yes
+  roles:
+        - loadbalancers
+

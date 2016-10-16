@@ -1,0 +1,13 @@
+<VirtualHost *:80>
+    DocumentRoot '{{lookup('env', 'HOME')}}/blocpower/web'
+ 
+    WSGIDaemonProcess blocpower user={{ansible_env.USER}} group={{ansible_env.USER}} processes=1 threads=5
+    WSGIScriptAlias /blocpower     {{ansible_env.HOME}}/blocpower/web/blocpower.wsgi
+    <Directory {{document_root}}>
+               Options +ExecCGI +FollowSymLinks
+               AllowOverride None
+               Require all granted
+               WSGIProcessGroup blocpower
+               WSGIApplicationGroup %{GLOBAL}
+    </Directory>
+</VirtualHost>

@@ -1,0 +1,8 @@
+---
+- name: Download Repo
+  git: repo=ssh://{{github_repo_address}} dest={{repo_destination}} accept_hostkey=yes
+  when: git_branch is not defined
+
+- name: Download Repo and with Specific Branch loaded
+  git: repo=ssh://{{github_repo_address}} dest={{repo_destination}} key_file={{permission_key_file}} accept_hostkey=yes version={{git_branch}}
+  when: git_branch is defined

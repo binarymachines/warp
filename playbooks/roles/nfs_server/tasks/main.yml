@@ -1,0 +1,17 @@
+# main.yml
+# Ansible script for NFS server setup
+#
+#
+
+---
+- name: Install NFS
+  apt: name=nfs-kernel-server state=present 
+
+- name: Install mdadm for RAID device setup
+  apt: name=mdadm state=present
+
+- name: Install drbd for replication
+  apt: name=drbd8-utils state=present
+
+
+

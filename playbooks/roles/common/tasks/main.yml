@@ -1,0 +1,6 @@
+#Common Tasks are tasks that apply to all machines in our environment
+---
+- name: Update Package Manager for Ubuntu
+  sudo: yes
+  apt: update_cache=true
+

@@ -1,0 +1,14 @@
+#
+# NFS server install on EC2
+#
+
+---
+- name: install & configure NFS server on EC2 hosts
+  hosts: 
+        - tag_Function_nfs
+
+  remote_user: ubuntu
+  sudo: yes
+  roles:
+        - nfs_server
+

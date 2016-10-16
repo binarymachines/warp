@@ -1,0 +1,63 @@
+#
+#
+#
+---
+#Playbook for launching either development,staging, or production servers
+
+# # Get application credentials
+# - name: Get User credentials
+#   hosts: all
+#   vars_prompt:
+#     - name: "github_username"
+#       prompt: "What is your Github username?"
+#       default: "none"
+#       private: yes
+
+#     - name: "github_password"
+#       prompt: "What is your Github password?"
+#       defaul: "none"
+#       private: yes
+#   tags:
+#     - always
+
+#Local Virtuabox Development Launch
+- name: launch local development application webservers
+  remote_user: vagrant
+  hosts: webservers
+  sudo: yes
+  roles:
+    - webservers
+  tags: 
+    - webserver
+    - dev
+
+
+- name: Configure  local development UMAP app
+  remote_user: vagrant
+  hosts: appservers
+  vars_prompt:
+    - name: "private_ssh_key"
+      prompt: "What is the Path to your private ssh key?"
+      default: "{{ lookup('env','HOME') }}/.ssh/id_rsa"
+      private: yes
+  roles:
+    - {role: UMAP, repo_owner: vagrant, github_repo_address: github.com/binarymachines/blocpower.git, repo_destination: /home/vagrant/blocpower, remote_user: vagrant}
+  tags:
+    - appserver
+    - dev
+
+- name: Configure local splunk instance
+  remote_user: vagrant
+  hosts: monitoring
+  sudo: yes
+  roles:
+    - {role: splunkWebMonitor, splunk_connection_host: ip}
+
+#AWS Staging Launch
+- include: ec2_dev_application.yml tags=staging
+
+- include: ec2_dev_splunk_web.yml tags=staging
+
+#AWS Production Launch
+- include: ec2_prod_application.yml tags=production
+- include: ec2_prod_splunk_web.yml tags=production

@@ -1,0 +1,6 @@
+github_username: [github username]
+github_password: [github password]
+github_repo_address: github.com/binarymachines/blocpower.git
+repo_destination: /home/vagrant/blocpower
+configuration_file: /home/vagrant/blocpower/web/blocpower_vagrant.conf
+repo_owner: vagrant

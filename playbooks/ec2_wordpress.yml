@@ -1,0 +1,31 @@
+#
+# wordpress playbook 
+#
+
+---
+- name: get keys and salts
+  hosts: 127.0.0.1
+  connection: local
+  tasks:
+        - get_url: url=http://api.wordpress.org/secret-key/1.1/salt dest=roles/wordpress/files/wp_config_template_seg2.php        
+          
+- name: install Apache on EC2 hosts
+  hosts: 
+        - tag_Name_bpnyc_web1_prod
+
+  remote_user: ubuntu
+  sudo: yes
+  roles:
+        - webservers
+
+
+- name: install Wordpress on EC2 hosts
+  hosts:
+        - tag_Name_bpnyc_web1_prod
+	- tag_Name_bpnyc_web2_prod
+
+  remote_user: ubuntu
+  sudo: no
+  roles:
+        - wordpress
+	- splunkUniversalForwarder

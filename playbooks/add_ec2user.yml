@@ -1,0 +1,54 @@
+#
+# add_ec2user.yml
+# 
+# Create a new user on existing EC2 instances
+# 
+# pass the parameters host_filter and userid on the command line, with the -e (--extra-vars) argument
+# example:
+#
+#~warp   ansible-playbook -u ubuntu -e='host_filter=tag_Name_<ec2_instance_name> userid=<new_username> pubkey=<public key file>' add_ec2user.yml
+#
+#~warp_var host_filter: desc=the "Name" tag of the EC2 instance on which we will create the user
+#
+---
+- hosts: "{{host_filter}}"
+  sudo: True
+  vars:
+    newuser: "{{ userid }}"   
+    pubkeyfile: "{{pubkey}}"
+    new_user_key: "{{lookup('file', 'pubkey')}}"
+    authorized_keys_file: " /home/{{ newuser }}/.ssh/authorized_keys"
+
+  tasks:
+
+  - debug: msg="SSH public key is {{new_user_key}}"
+
+  - debug: msg="ec2 instance filter is {{host_filter}}"
+
+  - debug: msg="remote authorized_keys path is {{ authorized_keys_file }}"
+
+  - name: Create admin group if it doesn't exist
+    group: name=admin system=yes state=present
+
+  - name:  Add the user with a bash shell, as a member of the admin group
+    user: name={{newuser}} shell=/bin/bash groups=admin append=yes
+
+  - name: Copy sudoers file for safety
+    command: cp -f /etc/sudoers /etc/sudoers.tmp
+
+  - name: Create sudoers file backup
+    command: cp -f /etc/sudoers /etc/sudoers.bak
+
+  - name: make sure we can sudo as admin group
+    lineinfile: dest=/etc/sudoers.tmp state=present regexp='^%admin' line='%admin ALL=(ALL) ALL'
+
+  - name: also make sure ssh-agent works via sudo
+    lineinfile: dest=/etc/sudoers.tmp state=present regexp='^Defaults env_keep\+\=SSH_AUTH_SOCK' line='Defaults env_keep+=SSH_AUTH_SOCK'
+
+  - name: Final sudoers file check
+    shell: visudo -q -c -f /etc/sudoers.tmp && cp -f /etc/sudoers.tmp /etc/sudoers
+
+  - name: update authorized_keys
+    authorized_key: user="{{newuser}}" key="{{new_user_key}}" path="{{ authorized_keys_file }}" state=present
+
+

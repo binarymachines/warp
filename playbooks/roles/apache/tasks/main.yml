@@ -1,0 +1,16 @@
+- name: Install Apache extras
+  apt: name={{item}} state=installed
+  with_items:
+        - apache2 
+        - apache2-mpm-prefork 
+        - apache2-utils
+        - libexpat1
+        - ssl-cert
+
+- name: Install WSGI module for Apache
+  apt: name={{item}} state=installed
+  with_items:
+  - libapache2-mod-wsgi
+
+- name: Start Apache
+  service: name=apache2 state=running enabled=yes

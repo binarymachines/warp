@@ -1,0 +1,7 @@
+- name: install and configure EC2 webservers in test group
+  hosts: tag_Group_test_web_cluster
+  remote_user: ubuntu
+  sudo: yes
+  roles:
+        - webservers
+

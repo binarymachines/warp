@@ -1,0 +1,69 @@
+# main.yml
+# Ansible task for provisioning Serpentine web app server
+#
+
+---
+
+- name: Install mysql client libraries
+  apt: pkg=libmysqlclient-dev state=installed
+
+- name: Install zlib
+  apt: pkg=zlib1g-dev
+
+- name: Install python tools
+  pip: name={{item}} state=present
+  with_items:
+  - virtualenv
+  - virtualenvwrapper
+
+- name: Install dependencies for Serpentine python packages
+  apt: pkg={{item}} state=installed
+  with_items:
+  - libxml2-dev
+  - libxslt1-dev
+  - python-dev
+  - libyaml-dev
+
+- name: Install Serpentine python deps in virtual env
+  pip: name={{item}} state=present virtualenv=/home/ubuntu/.virtualenvs/serpentine virtualenv_command=virtualenv
+
+  with_items:
+  - mysql-python
+  - wtforms
+  - jinja2
+  - xlwt
+  - lxml
+  - pyyaml
+  - beaker
+  - sqlalchemy
+  when: isVBVM != True
+
+- name: Install Serpentine python deps in virtual env vagrant
+  pip: name={{item}} state=present virtualenv=/home/vagrant/.virtualenvs/serpentine virtualenv_command=virtualenv
+  with_items:
+  - mysql-python
+  - wtforms
+  - jinja2
+  - xlwt
+  - lxml
+  - pyyaml
+  - beaker
+  - sqlalchemy
+  when: isVBVM == True
+
+- name: Set right permissions for the virtual environment
+  file: path=/home/vagrant/.virtualenvs owner=vagrant group=vagrant recurse=yes mode=0774
+  when: isVBVM == True
+
+- name: Set right permissions for the EC2 environment
+  file: path=/home/ubuntu/.virtualenvs owner=ubuntu group=ubuntu recurse=yes mode=0774
+  when: isVBVM != True
+
+
+- name: Install MYSQL server 
+  apt: pkg=mysql-server state=installed
+  when: isVBVM == True
+
+- name: Install MYSQL server 
+  apt: pkg=mysql-server state=installed
+  when: isVBVM != True

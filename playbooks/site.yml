@@ -1,0 +1,23 @@
+---
+- name: install and configure webservers
+  hosts: webservers
+  remote_user: ubuntu
+  sudo: yes
+  roles:
+    - webservers
+
+- name: configure Serpentine application servers 
+  hosts: appservers
+  sudo: yes
+  remote_user: ubuntu
+  roles:
+    - appservers
+
+- name: configure Vagrant App server
+  hosts: appservers
+  sudo: yes
+  remote_user: ubuntu
+  vars:
+    repo_owner: vagrant
+  roles:
+    - UMAP

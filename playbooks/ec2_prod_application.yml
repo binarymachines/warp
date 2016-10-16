@@ -1,0 +1,28 @@
+---
+- name: Install and configure webservers
+  hosts: tag_Function_umap
+  vars:
+    remote_user: ubuntu
+  sudo: yes
+  roles:
+    - webservers
+
+- name: Configure Serpentine application servers 
+  hosts: tag_Function_umap
+  sudo: yes
+  roles:
+    - appservers
+
+- name: Configure Vagrant App server
+  hosts: tag_Function_umap
+  sudo: yes
+  vars:
+    configuration_file: /home/ubuntu/blocpower/web/blocpower_ec2.conf
+  roles:
+    - UMAP
+
+- name: Configure application servers 
+  hosts: tag_Function_umap
+  sudo: yes
+  roles:
+    - splunkUniversalForwarder

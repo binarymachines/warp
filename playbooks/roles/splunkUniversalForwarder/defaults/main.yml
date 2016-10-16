@@ -1,0 +1,8 @@
+---
+splunk_executable: /opt/splunkforwarder/bin/splunk
+splunk_listening_port: 9997
+splunk_forward_server: 192.168.33.10
+splunk_source: splunkForwarder.deb
+splunk_tempdestination: /tmp/splunkForwarder.deb
+splunk_connection_host: none
+splunk_password: password

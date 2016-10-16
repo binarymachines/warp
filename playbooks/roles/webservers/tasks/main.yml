@@ -1,0 +1,13 @@
+# main.yml
+# Ansible script for Apache webserver setup
+#
+# Dependencies are in meta/main.yml
+---
+- name: Remove Default Virtual Host
+  file: path=/etc/apache2/sites-available/default state=absent
+
+- name: Create New Virtual Host
+  template: src=default.conf.j2 dest=/etc/apache2/sites-available/default
+
+- name: Restart Apache
+  shell: apachectl restart

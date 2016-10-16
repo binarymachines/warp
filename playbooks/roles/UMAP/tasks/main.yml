@@ -1,0 +1,34 @@
+---
+- name: Copy the private ssh key file over
+  copy: src={{private_ssh_key}} dest=/home/{{remote_user}}/.ssh/id_rsa mode=600 owner={{remote_user}} group={{remote_user}}
+
+- name: Add SSH agent
+  shell: ssh-add /home/{{remote_user}}/.ssh/id_rsa
+
+- name: Load the master branch of the repo
+  include: ../../cloneRemote/tasks/main.yml #github_repo_address={{github_repo_address}} github_username={{github_username}} github_password={{github_password}} repo_destination={{repo_destination}}
+  sudo: no
+  when: branch is not defined
+
+- name: Load branch of repo
+  sudo: no
+  include: ../../cloneRemote/tasks/main.yml git_branch={{branch}} #github_repo_address={{github_repo_address}} github_username={{github_username}} github_password={{github_password}} repo_destination={{repo_destination}} 
+  when: branch is defined
+
+#Symlink the configuration file based on the environment variables
+- name: Symlink to configuration file
+  sudo: no
+  shell: ln -s {{lookup('env', 'HOME')}}/blocpower/web/{{configuration_file}} {{lookup('env', 'HOME')}}/blocpower/web/blocpower.conf creates={{repo_destination}}/web/blocpower.conf
+
+- name: Set right permissions for the repo
+  sudo: no
+  file: path={{lookup('env', 'HOME')}}/blocpower owner={{repo_owner}} group=www-data recurse=yes mode=0755
+
+- name: Configure default DB
+  shell: mysql -u root < {{lookup('env', 'HOME')}}/blocpower/sql/core_schema.sql
+
+- name: Add lookup tables
+  shell: mysql -u root -D blocpower < {{lookup('env', 'HOME')}}/blocpower/sql/lookup_tables.sql
+
+- name: Change user settings
+  shell: mysql -u root < {{lookup('env', 'HOME')}}/blocpower/sql/vb_dbsetup.sql

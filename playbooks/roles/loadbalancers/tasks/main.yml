@@ -1,0 +1,22 @@
+#
+# Ansible tasks for setting up a load balancer with HAproxy and keepalived
+# 
+---
+
+- name: Make sure apt-add-repository is available on the server
+  apt: pkg=python-software-properties state=installed
+
+- name: Pull the latest stable version of HAproxy using a ppa
+  apt_repository: repo='ppa:vbernat/haproxy-1.5' state=present
+
+- name: Upgrade dist
+  apt: upgrade=dist
+
+- name: Install HAproxy
+  apt: pkg=haproxy state=installed
+
+- name: Install keepalived
+  apt: pkg=keepalived state=installed
+
+- name: Generate HAproxy configuration file
+  template: src=haproxy.conf.j2 dest=/home/ubuntu/haproxy.cfg

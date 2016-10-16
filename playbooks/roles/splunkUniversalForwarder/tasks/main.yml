@@ -1,0 +1,37 @@
+---
+- name: copy binary over
+  copy: src={{splunk_source}} dest={{splunk_tempdestination}}
+
+- name: install binary
+  shell: sudo dpkg -i {{splunk_tempdestination}}
+
+- name: delete binary
+  file: path={{splunk_tempdestination}} state=absent
+
+- name: start splunkForwarder
+  shell: '{{ splunk_executable }} start --accept-license'
+
+- name: enable boot-start
+  shell: '{{ splunk_executable }} enable boot-start'
+
+- name: change splunk password
+  shell: sudo {{splunk_executable}} edit user admin -password {{splunk_password}} -role admin -auth admin:changeme
+
+- name: add listener
+  shell: sudo {{splunk_executable}} add forward-server {{splunk_forward_server}}:{{splunk_listening_port}} -auth admin:{{splunk_password}}
+
+- name: Copy Unix and Linux TA addon
+  copy: src=../../splunkWebMonitor/files/splunkaddon.tgz dest=/tmp/splunkaddon.tgz
+
+- name: Install Unix and Linux TA addon
+  shell: sudo {{splunk_executable}} install app /tmp/splunkaddon.tgz
+
+- name: Delete Unix and Linux TA addon compressed source
+  file: path=/tmp/splunkaddon.tgz state=absent
+
+#Need to figure out which specific inputs are relevant to our systems fine tuning
+- name: Add Unix and Linux data and scripted inputs
+  shell: sudo {{splunk_executable}} cmd /opt/splunkForwarder/etc/apps/Splunk_TA_nix/bin/setup.sh --enable-all --auth admin:{{splunk_password}}
+
+- name: Restart Splunk forwarder with new configurations
+  shell: sudo {{splunk_executable}} restart

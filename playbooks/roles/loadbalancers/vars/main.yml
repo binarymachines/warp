@@ -1,0 +1,17 @@
+#
+# template variables for HAproxy loadbalancer setup
+#
+---
+admin_username: admin
+admin_password: runthenumbers
+front_end_port: 80
+stats_port: 1936
+cluster:
+        - name: server1
+          ip: 172.30.0.125
+          port: 80
+
+        - name: server2
+          ip: 172.30.0.124
+          port: 80
+
