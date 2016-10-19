@@ -1,0 +1,11 @@
+
+commands:
+        ping:
+                line: ansible -u <user> -i inventory/ec2.py -m ping tag_Name_<tag_name>
+                defaults:
+                        - param: user
+                          value: ubuntu
+
+
+                
+

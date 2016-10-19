@@ -32,7 +32,17 @@ from cmd import Cmd
 import os, sys
 from sys import stdin
 import re
+import logging
 
+
+
+logger = logging.getLogger()
+handler = logging.StreamHandler()
+formatter = logging.Formatter(
+        '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
 
 
 class MissingEnvironmentVariableException(Exception):
@@ -134,14 +144,15 @@ class Playbook():
 
 class ComposeException(Exception):
     def __init__(self, parameter_string):
-        Exception.__init__(self, 'No value provided for command parameter %s in the passed args or the defaults.' % parameter_string)
+        Exception.__init__(self, 'No value provided for command parameter %s in the passed args or the defaults.'
+                           % parameter_string)
         
 
 
 class Composer(object):
     def __init__(self, command_template, **kwargs):
         self.raw_cmd = command_template.command_line
-        self.default_parameter_values = command_template.defaults
+        self.default_parameter_values = command_template.defaults()
         self.settings = kwargs
         self.cmd_parameters = {}
         self.warp_var_rx = re.compile(r'<[\s\S]+?>')
@@ -149,7 +160,7 @@ class Composer(object):
         var_expressions = self.warp_var_rx.findall(self.raw_cmd)
         for exp in var_expressions:
             param_name = exp.lstrip('<').rstrip('>')
-            self.cmd_parameters[param_name] = False
+            self.cmd_parameters[param_name] = False        
             
 
     def has_default_value_for_param(self, param_name):
@@ -192,12 +203,16 @@ class Composer(object):
 class CommandTemplate(object):
     def __init__(self, yaml_cfg, **kwargs):
         self.command_line = yaml_cfg['line'].strip()
-        self. defaults = {}
+        self._defaults = {}
         for tbl in yaml_cfg['defaults']:
-            self.defaults[tbl['param']] = tbl['value']
+            self._defaults[tbl['param']] = tbl['value']
         
 
-        
+    def defaults(self):
+        return self._defaults
+
+
+    
 class CommandGroup(object):
     def __init__(self, name, **kwargs):
         self.templates = []
@@ -263,8 +278,7 @@ class CommandLoader(object):
 
     def load_command(self, command_name, group_name):        
         command_obj = self.command_groups[group_name]['commands'].get(command_name)
-        if not command_obj:
-            #raise Exception('No command "%s" found in command group %s.' % (command_name, group_name))
+        if not command_obj:            
             raise NoSuchCommandException(command_name, group_name)
 
         cg = CommandGroup(group_name)
@@ -289,7 +303,7 @@ class InputPrompt():
     def show(self):        
         result = raw_input(self.prompt).strip()
         if not result:
-            result = self.default_value
+            result = self.default
         return result
     
     
@@ -305,7 +319,7 @@ class OptionPrompt(object):
         display_options = []
         for o in self.options:
             if o == self.default_value:
-                display_options.append('[%s]' % o)
+                display_options.append('[%s]' % o.upper())
             else:
                 display_options.append(o)
 
@@ -316,7 +330,8 @@ class OptionPrompt(object):
             result = self.default_value
 
         return result
-        
+
+    
 class Notifier():
     def __init__(self, prompt_string, info_string):
         self.prompt = prompt_string
@@ -332,13 +347,11 @@ class WarpCLI(Cmd):
     def __init__(self, command_group):
         # we always get a command group passed to the constructor, even if
         # it only has a single command
-        Cmd.__init__(self, "Hello")
+        Cmd.__init__(self)
         self.command_group = command_group
-        self.do_go({})
+        self.process_command(self.command_group.current_template())
         self.prompt = '[warp-> ' # %
         
-        self.cmd_index = 0
-        #self.greeting = 'Hello!'
 
         
     def prompt_for_value(self, parameter_name, current_cmd):
@@ -357,34 +370,46 @@ class WarpCLI(Cmd):
         raise SystemExit
 
     
-    def do_cmd(self, args):
+    def do_list(self, args):
         '''Lists the warp commands in the queue.'''
-        print 'command: %s' % self.command_template.command_line
-        print 'default param values: %s' % self.command_template.defaults
+        for template in self.command_group.templates:
+            self.show_template_info(Composer(template))
+            print '\n'
 
         
     def do_shell(self, args):
         """Pass command to a system shell when line begins with '!'"""
+        print 'executing shell command...'
         os.system(args)
 
 
-    def process_command(self, command_template):
-        composer = Composer(command_template)
+    def show_template_info(self, composer):
+        print '[command-template]: %s' % composer.raw_cmd
+        defaults_list = []
+        for name,value in composer.default_parameter_values.iteritems():
+            defaults_list.append('    %s: %s' % (name, value))
+        defaults_display = '\n'.join(defaults_list)
+        print '[defaults]:\n%s' %  defaults_display
+
+
+    def process_command(self, _command_template):
+        composer = Composer(_command_template)
         print '[command-template]: %s' % composer.raw_cmd
 
         defaults_list = []
         for name,value in composer.default_parameter_values.iteritems():
             defaults_list.append('    %s: %s' % (name, value))
-        
         defaults_display = '\n'.join(defaults_list)
         print '[defaults]:\n%s' %  defaults_display
         
         answer = OptionPrompt('populate with default values?', ['y', 'n'], 'y').show()
+
+        user_params = {}
         
         if answer.lower() == 'y':
-            user_params = composer.default_parameter_values
-        elif answer.lower() == 'n':            
-            user_params = {}           
+            user_params = dict(composer.default_parameter_values)
+        #elif answer.lower() == 'n':            
+        #    user_params = {}           
             
         empty_params = composer.get_unpopulated_params(user_params)
         for param_name in empty_params:
@@ -392,6 +417,9 @@ class WarpCLI(Cmd):
             user_params[param_name] = new_param_value
 
         final_command = composer.build(user_params)
+        
+        
+        
         print'[command]: %s' % final_command
 
         options = ['y', 'n']
@@ -403,7 +431,7 @@ class WarpCLI(Cmd):
     def do_next(self, args):
         '''Runs the next warp command in the queue.'''
 
-        if not self.command_group.has_next_template():
+        if not self.command_group.next_template():
             print 'no more commands in queue.'
         else:
             self.process_command(self.command_group.next_template())
@@ -414,12 +442,14 @@ class WarpCLI(Cmd):
         '''Runs the current warp command in the queue.'''
 
         template =  self.command_group.current_template()
+        logging.debug('params for current template: %s' % template.defaults())
         if not template:
             print 'end of command group.'
         else:
             self.process_command(template)
 
     do_q = do_quit
+    do_ls = do_list
 
         
 def read_env_var(var_name, mandatory=True):
