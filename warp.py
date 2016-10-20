@@ -261,7 +261,7 @@ class CommandLoader(object):
                 self.command_groups[groupname] = yaml.load(f)
 
     @property
-    def groups(self):
+    def group_names(self):
         return self.command_groups.keys()
 
                 
@@ -519,7 +519,8 @@ def main():
         target = args.get('<command_target>')
 
         if target == 'ls': # show everything
-            print '### list everything in warpfiles.'
+            for name in loader.group_names:
+                print '%s' % (name)
 
         elif is_command_designator(target):
             print '### show contents of command %s.' % target
