@@ -6,7 +6,8 @@
 #
 
 """Usage: 
-    warp [ -pge ] <command_target>  
+    warp
+    warp <command_target>  
     warp ls 
     warp ls <command_target> 
     warp --config
@@ -18,7 +19,6 @@ Arguments:
     
 Options:
     -l, --list       List contents of command target, or list all command groups
-    -p, --preview    Preview mode: generate command line from command target but do not execute
     -g, --group      Specify command-group as a target
     -c, --config     Show current config information
 
@@ -201,7 +201,8 @@ class Composer(object):
 
 
 class CommandTemplate(object):
-    def __init__(self, yaml_cfg, **kwargs):
+    def __init__(self, name, yaml_cfg, **kwargs):
+        self.name = name
         self.command_line = yaml_cfg['line'].strip()
         self._defaults = {}
         for tbl in yaml_cfg['defaults']:
@@ -260,6 +261,11 @@ class CommandLoader(object):
             with open(filename) as f:
                 self.command_groups[groupname] = yaml.load(f)
 
+
+    def group(self, group_name):
+        return self.command_groups.get(group_name)
+
+                
     @property
     def group_names(self):
         return self.command_groups.keys()
@@ -271,7 +277,7 @@ class CommandLoader(object):
 
         cg = CommandGroup(group_name)
         for key, command_obj in self.command_groups[group_name]['commands'].iteritems():
-            cg.append(CommandTemplate(command_obj))
+            cg.append(CommandTemplate(key, command_obj))
             
         return cg
 
@@ -282,7 +288,7 @@ class CommandLoader(object):
             raise NoSuchCommandException(command_name, group_name)
 
         cg = CommandGroup(group_name)
-        cg.append(CommandTemplate(command_obj))
+        cg.append(CommandTemplate(command_name, command_obj))
         return cg
     
 
@@ -341,18 +347,18 @@ class Notifier():
         print '[%s]: %s' % (self.prompt, self.info)
         
 
-        
-            
-class WarpCLI(Cmd):
-    def __init__(self, command_group):
-        # we always get a command group passed to the constructor, even if
-        # it only has a single command
-        Cmd.__init__(self)
-        self.command_group = command_group
-        self.process_command(self.command_group.current_template())
-        self.prompt = '[warp-> ' # %
-        
 
+def is_command_designator(cmd_target_string):
+    return cmd_target_string.find('.') != -1
+
+
+                    
+class WarpCLI(Cmd):
+    def __init__(self, command_loader):
+        Cmd.__init__(self)
+        self.command_loader = command_loader
+        self.prompt = '[warp-> ' 
+        
         
     def prompt_for_value(self, parameter_name, current_cmd):
         Notifier('command-template', current_cmd).show()
@@ -372,10 +378,19 @@ class WarpCLI(Cmd):
     
     def do_list(self, args):
         '''Lists the warp commands in the queue.'''
-        for template in self.command_group.templates:
-            self.show_template_info(Composer(template))
-            print '\n'
+        detail_mode = False
+        if args == '-d':
+            detail_mode = True
+        for name in self.command_loader.group_names:
+            if detail_mode:
+                print '%s:' % name
+                for t in self.command_loader.load_command_group(name).templates:
+                    print '    %s: %s' % (t.name, t.command_line)
+            else:
+                print name
 
+            print '\n'
+       
         
     def do_shell(self, args):
         """Pass command to a system shell when line begins with '!'"""
@@ -417,37 +432,40 @@ class WarpCLI(Cmd):
             user_params[param_name] = new_param_value
 
         final_command = composer.build(user_params)
-        
-        
-        
         print'[command]: %s' % final_command
 
         options = ['y', 'n']
         answer = OptionPrompt('execute command?', options, 'y').show()
         if answer.lower() == 'y':        
             self.do_shell(final_command)
-
-
-    def do_next(self, args):
-        '''Runs the next warp command in the queue.'''
-
-        if not self.command_group.next_template():
-            print 'no more commands in queue.'
-        else:
-            self.process_command(self.command_group.next_template())
             
-        
+            
+    def parse_command_selector(self, selector):
+        cmd_groups = []
+        if is_command_designator(selector):
+            cmd_tokens = selector.split('.')            
+            target_group_name = cmd_tokens[0]
+            target_cmd = cmd_tokens[1]
+
+            # load_command() will give us back a command  group,
+            # but it will only have one command
+            cmd_group = self.command_loader.load_command(target_cmd, target_group_name)
+        else:            
+            cmd_group = self.command_loader.load_command_group(selector)
+
+        return cmd_group
+    
         
     def do_go(self, args):
-        '''Runs the current warp command in the queue.'''
+        '''Runs one or more selected warp commands.'''
 
-        template =  self.command_group.current_template()
-        logging.debug('params for current template: %s' % template.defaults())
-        if not template:
-            print 'end of command group.'
-        else:
-            self.process_command(template)
+        if args:
+            command_group = self.parse_command_selector(args)
+            for template in command_group.templates:
+                self.process_command(template)
 
+
+                
     do_q = do_quit
     do_ls = do_list
 
@@ -497,9 +515,6 @@ def load_command_group(group_name, group_dict):
         
 
 
-def is_command_designator(cmd_target_string):
-    return cmd_target_string.find('.') != -1
-
 
 
 def main():
@@ -514,7 +529,7 @@ def main():
     warpfiles_dir = os.path.join(os.getcwd(), 'warpfiles')  
 
     loader = CommandLoader(warpfiles_dir)
-    
+    '''
     if cmd_options['list']:        
         target = args.get('<command_target>')
 
@@ -551,6 +566,9 @@ def main():
         else:            
             cmd_group = loader.load_command_group(target)
             WarpCLI(cmd_group).cmdloop()
+    '''
+
+    WarpCLI(loader).cmdloop()
 
         
 
