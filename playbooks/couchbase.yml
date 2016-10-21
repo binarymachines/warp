@@ -1,0 +1,16 @@
+---
+- hosts: all
+  sudo: yes
+  roles:
+    - common
+    - git
+    - pip
+
+  tasks:
+    - name: download couchbase
+      get_url: url=http://packages.couchbase.com/releases/4.1.0/couchbase-server-community_4.1.0-ubuntu14.04_amd64.deb dest=~
+
+    - name: install couchbase
+      apt: deb="~/couchbase-server-community_4.1.0-ubuntu14.04_amd64.deb"
+      sudo: true
+        

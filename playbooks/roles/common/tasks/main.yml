@@ -1,6 +1,9 @@
-#Common Tasks are tasks that apply to all machines in our environment
+# Common Tasks are tasks that apply to all machines in our environment
 ---
 - name: Update Package Manager for Ubuntu
   sudo: yes
   apt: update_cache=true
 
+- name: Install openssl
+  sudo: yes
+  apt: name=libssl1.0.0 state=installed

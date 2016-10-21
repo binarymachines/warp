@@ -1,0 +1,30 @@
+# install elasticsearch on a single EC2 instance
+---
+- hosts: all
+  sudo: yes
+  roles:
+    - common
+    - git
+    - pip
+    - java
+
+  tasks:
+    - name: download elasticsearch
+      get_url: url=https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.3.1/elasticsearch-2.3.1.deb dest=~
+
+    - name: install elasticsearch
+      apt: deb="~/elasticsearch-2.3.1.deb"
+      sudo: true
+
+    - name: set elasticserach to start on boot
+      command: systemctl enable elasticsearch.service
+      sudo: true
+
+
+    - name: start elasticsearch
+      service: name=elasticsearch status=started
+      sudo: true
+
+
+    
+        

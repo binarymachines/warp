@@ -388,8 +388,6 @@ class WarpCLI(Cmd):
                     print '    %s: %s' % (t.name, t.command_line)
             else:
                 print name
-
-            print '\n'
        
         
     def do_shell(self, args):
@@ -467,7 +465,6 @@ class WarpCLI(Cmd):
 
                 
     do_q = do_quit
-    do_ls = do_list
 
         
 def read_env_var(var_name, mandatory=True):

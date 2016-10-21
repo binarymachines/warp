@@ -1,0 +1,6 @@
+commands:
+        install_couchbase:
+                line: ansible-playbook -u <user> -i inventory/ec2.py playbooks/couchbase.yml
+                defaults:
+                        - param: user
+                          value: ubuntu
