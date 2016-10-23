@@ -32,6 +32,7 @@ from cmd import Cmd
 import os, sys
 from sys import stdin
 import re
+from fnmatch import fnmatch
 import logging
 
 
@@ -192,8 +193,7 @@ class Composer(object):
         for source_param_string in cmd_params:            
             source_param_name = source_param_string.lstrip('<').rstrip('>')            
             target_param_value = parameter_tbl.get(source_param_name, self.default_value_for_param(source_param_name))            
-            #if not target_param_value:
-            #    raise ComposeException(source_param_string)
+
             if target_param_value:
                 target_command = target_command.replace(source_param_string, target_param_value)
             
@@ -214,82 +214,74 @@ class CommandTemplate(object):
 
 
     
-class CommandGroup(object):
+class CommandTemplateGroup(object):
     def __init__(self, name, **kwargs):
         self.templates = []
         self.name = name
-        self.index = 0
         
 
-    def append(self, command_template):            
+    def add_template(self, command_template):            
         self.templates.append(command_template)
 
         
     def template_count(self):
         return len(self.templates)
 
-    
-    def current_template(self):
-        if not self.template_count():
-            raise Exception('Attempted to retrieve a command template from an empty command group.')
-        return self.templates[self.index]
-
-    
-    def next_template(self):
-        if self.index == len(self.templates) -1 :
-            return self.templates[-1]
-        self.index += 1
-        return self.current_template()
-
-
-    def previous_template(self):
-        if self.index == 0:            
-            return self.current_template
-        self.index -= 1
-        return self.current_template()
-
-    
+           
     
 class CommandLoader(object):
     def __init__(self, warpfiles_dir, **kwargs):
-        self.command_groups = {}      
+        self.command_template_groups = {}      
         warpfiles = [os.path.join(warpfiles_dir, f) for f in os.listdir(warpfiles_dir) if f.endswith('yml') or f.endswith('yaml')]
         
         for filename in warpfiles:
             extension = filename.split('.')[-1]    
             groupname = os.path.basename(filename.rstrip('.%s' % extension))    
             with open(filename) as f:
-                self.command_groups[groupname] = yaml.load(f)
+                self.command_template_groups[groupname] = yaml.load(f)
 
 
     def group(self, group_name):
-        return self.command_groups.get(group_name)
+        return self.command_template_groups.get(group_name)
 
                 
     @property
     def group_names(self):
-        return self.command_groups.keys()
+        return self.command_template_groups.keys()
 
                 
-    def load_command_group(self, group_name):        
-        if not self.command_groups.get(group_name):
+    def load_command_templates_by_group(self, group_name):        
+        if not self.command_template_groups.get(group_name):
             raise NoSuchGroupException(group_name)
 
-        cg = CommandGroup(group_name)
-        for key, command_obj in self.command_groups[group_name]['commands'].iteritems():
-            cg.append(CommandTemplate(key, command_obj))
+        templates = []
+        for key, command_obj in self.command_template_groups[group_name]['commands'].iteritems():
+            templates.append(CommandTemplate(key, command_obj))
             
-        return cg
+        return templates
+
+    
+    def load_command_templates_by_name_match(self, command_name_expr, group_name):
+        #ctg = CommandTemplateGroup(group_name)
+        
+        candidates = self.command_template_groups[group_name]['commands'].keys()
+        target_command_names = [name for name in candidates if fnmatch(name, command_name_expr)]
+
+        templates = []
+        for cmd_name in target_command_names:
+            command_obj = self.command_template_groups[group_name]['commands'][cmd_name]            
+            templates.append(CommandTemplate(cmd_name, command_obj))
+
+        return templates        
 
 
-    def load_command(self, command_name, group_name):        
-        command_obj = self.command_groups[group_name]['commands'].get(command_name)
+    def load_command_template_by_name(self, command_name, group_name):        
+        command_obj = self.command_template_groups[group_name]['commands'].get(command_name)
         if not command_obj:            
             raise NoSuchCommandException(command_name, group_name)
 
-        cg = CommandGroup(group_name)
-        cg.append(CommandTemplate(command_name, command_obj))
-        return cg
+        return CommandTemplate(command_name, command_obj)
+
     
 
     
@@ -384,8 +376,8 @@ class WarpCLI(Cmd):
         for name in self.command_loader.group_names:
             if detail_mode:
                 print '%s:' % name
-                for t in self.command_loader.load_command_group(name).templates:
-                    print '    %s: %s' % (t.name, t.command_line)
+                for template in self.command_loader.load_command_templates_by_group(name):
+                    print '    %s: %s' % (template.name, template.command_line)
             else:
                 print name
        
@@ -437,31 +429,56 @@ class WarpCLI(Cmd):
         if answer.lower() == 'y':        
             self.do_shell(final_command)
             
+
+
+    def infer_target_command_groups(self, group_selector_string):
+        return [name for name in self.command_loader.group_names if fnmatch(name, group_selector_string)]
+        
+
             
     def parse_command_selector(self, selector):
         cmd_groups = []
+        targets = {}
+        
         if is_command_designator(selector):
             cmd_tokens = selector.split('.')            
-            target_group_name = cmd_tokens[0]
-            target_cmd = cmd_tokens[1]
-
-            # load_command() will give us back a command  group,
-            # but it will only have one command
+            group_string = cmd_tokens[0]
+            cmd_string = cmd_tokens[1]
+            return (group_string, cmd_string)
+            '''
+            selected_groups = self.infer_target_command_groups(group_string)
+            for group_name in selected_groups:
+                selected_commands = self.infer_target_commands(group_name, cmd_string)
+                targets[group_name] = selected_commands
+                            
             cmd_group = self.command_loader.load_command(target_cmd, target_group_name)
-        else:            
-            cmd_group = self.command_loader.load_command_group(selector)
+            '''
+                  
+            #cmd_group = self.command_loader.load_command_group(selector)
+        return (selector)
 
-        return cmd_group
     
         
     def do_go(self, args):
         '''Runs one or more selected warp commands.'''
 
         if args:
-            command_group = self.parse_command_selector(args)
-            for template in command_group.templates:
-                self.process_command(template)
+            target_tuple = self.parse_command_selector(args)
+            command_templates = []
 
+            group_selector = target_tuple[0]
+            target_group_names = self.infer_target_command_groups(group_selector)
+            if len(target_tuple) == 2:                
+                command_selector = target_tuple[1]                
+                for group_name in target_group_names:
+                    command_templates.extend(self.command_loader.load_command_templates_by_name_match(command_selector, group_name))
+
+            else:
+                for group_name in target_group_names:
+                    command_templates.extend(self.command_loader.load_command_templates_by_group(group_name))
+                    
+            for t in command_templates:                
+                self.process_command(t)
 
                 
     do_q = do_quit

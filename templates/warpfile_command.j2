@@ -1,0 +1,7 @@
+{{command.name}}:
+                line: {{ command.line }}
+                defaults:
+			{% for param in command.params %}
+                        - param: {{ param.name }}
+                          value: {{ param.value }}
+			{% endfor %}
