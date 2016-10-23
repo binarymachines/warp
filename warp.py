@@ -409,12 +409,9 @@ class WarpCLI(Cmd):
         
         answer = OptionPrompt('populate with default values?', ['y', 'n'], 'y').show()
 
-        user_params = {}
-        
+        user_params = {}        
         if answer.lower() == 'y':
             user_params = dict(composer.default_parameter_values)
-        #elif answer.lower() == 'n':            
-        #    user_params = {}           
             
         empty_params = composer.get_unpopulated_params(user_params)
         for param_name in empty_params:
@@ -438,25 +435,14 @@ class WarpCLI(Cmd):
             
     def parse_command_selector(self, selector):
         cmd_groups = []
-        targets = {}
-        
+        targets = {}        
         if is_command_designator(selector):
             cmd_tokens = selector.split('.')            
             group_string = cmd_tokens[0]
             cmd_string = cmd_tokens[1]
             return (group_string, cmd_string)
-            '''
-            selected_groups = self.infer_target_command_groups(group_string)
-            for group_name in selected_groups:
-                selected_commands = self.infer_target_commands(group_name, cmd_string)
-                targets[group_name] = selected_commands
-                            
-            cmd_group = self.command_loader.load_command(target_cmd, target_group_name)
-            '''
-                  
-            #cmd_group = self.command_loader.load_command_group(selector)
-        return (selector)
 
+        return (selector)
     
         
     def do_go(self, args):
@@ -465,7 +451,6 @@ class WarpCLI(Cmd):
         if args:
             target_tuple = self.parse_command_selector(args)
             command_templates = []
-
             group_selector = target_tuple[0]
             target_group_names = self.infer_target_command_groups(group_selector)
             if len(target_tuple) == 2:                
@@ -479,7 +464,6 @@ class WarpCLI(Cmd):
                     
             for t in command_templates:                
                 self.process_command(t)
-
                 
     do_q = do_quit
 
@@ -491,19 +475,6 @@ def read_env_var(var_name, mandatory=True):
 
     return value
 
-
-'''
-def load_command_groups(warpfiles_dir):
-    groups = {}
-    warpfiles = [os.path.join(warpfiles_dir, f) for f in os.listdir(warpfiles_dir) if f.endswith('yml') or f.endswith('yaml')]
-    for filename in warpfiles:
-        extension = filename.split('.')[-1]    
-        groupname = os.path.basename(filename.rstrip('.%s' % extension))    
-        with open(filename) as f:
-            groups[groupname] = yaml.load(f)
-        
-    return groups
-'''     
 
 
 def show_commands_in_group(name, group_dict):

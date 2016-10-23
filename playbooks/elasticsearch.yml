@@ -16,13 +16,8 @@
       apt: deb="~/elasticsearch-2.3.1.deb"
       sudo: true
 
-    - name: set elasticserach to start on boot
-      command: systemctl enable elasticsearch.service
-      sudo: true
-
-
     - name: start elasticsearch
-      service: name=elasticsearch status=started
+      service: state=started name=elasticsearch enabled=true   
       sudo: true
 
 

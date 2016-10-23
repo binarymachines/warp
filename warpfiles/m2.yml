@@ -1,6 +1,13 @@
+---
 commands:
         install_couchbase:
-                line: ansible-playbook -u <user> -i inventory/ec2.py playbooks/couchbase.yml
+                line: ansible-playbook -u <user> -i inventory/ec2.py playbooks/couchbase.yml --limit tag_Name_<name>
+                defaults:
+                        - param: user
+                          value: ubuntu
+
+        install_elasticsearch:
+                line: ansible-playbook -u <user> -i inventory/ec2.py playbooks/elasticsearch.yml --limit tag_Name_<name>
                 defaults:
                         - param: user
                           value: ubuntu
