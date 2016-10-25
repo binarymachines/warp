@@ -8,13 +8,82 @@
     - pip
     - java
 
+  vars_files:
+    - vars/m2/elasticsearch_defaults.yml
+
   tasks:
+    - name: elastic-install | Install python-software-properties
+      apt:
+        pkg=python-software-properties
+        state=present
+        update_cache=yes
+        cache_valid_time={{apt_cache_valid_time}}
+
+
+    - name: elastic-install | Configure elastic group
+      group:
+        name={{ elasticsearch_group }}
+
+
+    - name: elastic-install | Configure elastic user
+      user:
+        name={{ elasticsearch_user }}
+        group={{ elasticsearch_group }}
+        createhome=no
+
+
+    - name: elastic-install | Ensure elasticsearch directories exist
+      file:
+        path="{{ item }}"
+        state=directory
+        owner={{ elasticsearch_user }}
+        group={{ elasticsearch_group }}
+        recurse=yes
+      with_items:
+        - "{{ elasticsearch_work_dir }}"
+        - "{{ elasticsearch_home_dir }}"
+        - "{{ elasticsearch_log_dir }}"
+        - "{{ elasticsearch_data_dir }}"
+        - "{{ elasticsearch_work_dir }}"
+        - "{{ elasticsearch_conf_dir }}"
+
     - name: download elasticsearch
-      get_url: url=https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.3.1/elasticsearch-2.3.1.deb dest=~
+      get_url:
+        url={{ elasticsearch_download_url }}/elasticsearch/{{ elasticsearch_version }}/elasticsearch-{{ elasticsearch_version }}.deb
+        dest=/tmp/elasticsearch-{{ elasticsearch_version }}.deb
+        mode=0440
+
 
     - name: install elasticsearch
-      apt: deb="~/elasticsearch-2.3.1.deb"
+      apt: deb="/tmp/elasticsearch-{{ elasticsearch_version }}.deb"
       sudo: true
+
+
+    - name: elastic-install | Comfigure elasticsearch
+      template:
+        src=templates/elasticsearch.yml.j2
+        dest={{ elasticsearch_conf_dir  }}/elasticsearch.yml
+        owner={{ elasticsearch_user }}
+        group={{ elasticsearch_group }}
+        mode=0644
+      when: elasticsearch_conf_dir is defined
+      #notify: restart elasticsearch
+
+
+    - name: elastic-install | Comfigure /etc/default/elasticsearch
+      template:
+        src=templates/elasticsearch.default.j2
+        dest=/etc/default/elasticsearch
+        owner={{ elasticsearch_user }}
+        group={{ elasticsearch_group }}
+        mode=0644    
+      #notify: restart elasticsearch
+
+
+    - name: es-plugin-install
+      shell: bin/plugin install mobz/elasticsearch-head
+          chdir={{ elasticsearch_home_dir }}
+
 
     - name: start elasticsearch
       service: state=started name=elasticsearch enabled=true   
