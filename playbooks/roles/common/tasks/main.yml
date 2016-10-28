@@ -4,6 +4,11 @@
   sudo: yes
   apt: update_cache=true
 
+- name: Install python
+  sudo: yes
+  apt: name=python2.7 state=installed
+
 - name: Install openssl
   sudo: yes
   apt: name=libssl1.0.0 state=installed
+

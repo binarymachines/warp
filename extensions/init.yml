@@ -1,0 +1,10 @@
+# initialization file for loading Warp extensions
+---
+extension_modules:
+        test:
+                - ext1
+                - ext2
+                
+                
+        
+        

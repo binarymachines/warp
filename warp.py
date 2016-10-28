@@ -33,6 +33,7 @@ import os, sys
 from sys import stdin
 import re
 from fnmatch import fnmatch
+from types import MethodType
 import logging
 
 
@@ -232,7 +233,7 @@ class CommandTemplateGroup(object):
 class CommandLoader(object):
     def __init__(self, warpfiles_dir, **kwargs):
         self.command_template_groups = {}      
-        warpfiles = [os.path.join(warpfiles_dir, f) for f in os.listdir(warpfiles_dir) if f.endswith('yml') or f.endswith('yaml')]
+        warpfiles = [os.path.join(warpfiles_dir, f) for f in os.listdir(warpfiles_dir) if f.endswith('.yml') or f.endswith('.yaml')]
         
         for filename in warpfiles:
             extension = filename.split('.')[-1]    
@@ -282,9 +283,48 @@ class CommandLoader(object):
 
         return CommandTemplate(command_name, command_obj)
 
-    
 
+class MethodExtension(object):
+    def __init__(self, name, function, **kwargs):
+        self.name = name
+        self.function = function        
+
+    def load(self, target_class):
+        setattr(target_class, self.name, MethodType(self.function, None, target_class))
+
+        
     
+class ExtensionManager(object):
+    def __init__(self, extensions_dir, **kwargs):
+        sys.path.append(extensions_dir)
+
+        
+        
+        
+        self.extensions = {}
+        extension_modules = [os.path.join(extensions_dir, f) for f in os.listdir(extensions_dir) if f.endswith('.py')]
+        extension_initfile_name = os.path.join(extensions_dir, 'init.yml')
+        extension_config = None
+        with open(extension_initfile_name) as f:
+            extension_config = yaml.load(f)
+        prefix = 'do'
+        
+        for module_name in extension_config.get('extension_modules'):
+            dirmod = __import__('extensions.%s' % module_name)
+            extmod = getattr(dirmod, module_name)
+            #mod = getattr(extmod, module_name)
+            for function_id in extension_config['extension_modules'][module_name]:
+                function_name = '_'.join([prefix, function_id])
+                bound_method_name = '_'.join([prefix, module_name, function_id])
+                function_obj = getattr(extmod, function_name)
+                mx = MethodExtension(bound_method_name, function_obj)
+                self.extensions[bound_method_name] = mx
+
+    def load_all(self, target_class):
+        for (name, ext) in self.extensions.iteritems():
+            ext.load(target_class)
+
+                
 class UserEntry():
     def __init__(self, data):
         self.result = data.strip()
@@ -346,9 +386,10 @@ def is_command_designator(cmd_target_string):
 
                     
 class WarpCLI(Cmd):
-    def __init__(self, command_loader):
+    def __init__(self, command_loader, extension_mgr):
         Cmd.__init__(self)
         self.command_loader = command_loader
+        self.extension_manager = extension_mgr
         self.prompt = '[warp-> ' 
         
         
@@ -380,7 +421,13 @@ class WarpCLI(Cmd):
                     print '    %s: %s' % (template.name, template.command_line)
             else:
                 print name
-       
+
+                
+    def do_lsx(self, args):
+        '''List installed extensions'''
+        print 'stub command' 
+
+        
         
     def do_shell(self, args):
         """Pass command to a system shell when line begins with '!'"""
@@ -444,7 +491,7 @@ class WarpCLI(Cmd):
 
         return (selector)
     
-        
+           
     def do_go(self, args):
         '''Runs one or more selected warp commands.'''
 
@@ -464,7 +511,12 @@ class WarpCLI(Cmd):
                     
             for t in command_templates:                
                 self.process_command(t)
-                
+
+
+    def do_x(self, args):
+        print 'command extension stub method.'
+
+        
     do_q = do_quit
 
         
@@ -499,6 +551,9 @@ def load_command_group(group_name, group_dict):
     return templates
         
 
+def do_xt(self, *args):
+    print 'running an extension command!'
+    
 
 
 
@@ -511,49 +566,15 @@ def main():
     cmd_options['config'] = True if args.get('--config') else False
     cmd_options['list'] = True if args.get('ls') or args.get('<command_target>') == 'ls' else False
     
-    warpfiles_dir = os.path.join(os.getcwd(), 'warpfiles')  
+    warpfiles_dir = os.path.join(os.getcwd(), 'warpfiles')
+    extensions_dir = os.path.join(os.getcwd(), 'extensions')
 
     loader = CommandLoader(warpfiles_dir)
-    '''
-    if cmd_options['list']:        
-        target = args.get('<command_target>')
-
-        if target == 'ls': # show everything
-            for name in loader.group_names:
-                print '%s' % (name)
-
-        elif is_command_designator(target):
-            print '### show contents of command %s.' % target
-        else:            
-            print '### show contents of command group %s.' % target
-            print command_groups.keys()
-                
-    elif cmd_options['config']:
-        print '### show warp config settings.'
-
-    elif args.get('<command_target>'):
-        target = args['<command_target>']
-
-        # a target containing a '.' character is a command designator;
-        # the format is <group_name>.<command_name>
-        #
-        if is_command_designator(target):
-            cmd_tokens = target.split('.')            
-            target_group_name = cmd_tokens[0]
-            target_cmd = cmd_tokens[1]
-
-            # load_command() will give us back a command  group,
-            # but it will only have one command
-            cmd_group = loader.load_command(target_cmd, target_group)
-            WarpCLI(cmd_template).cmdloop()
-            
-        # anything else is a group designator            
-        else:            
-            cmd_group = loader.load_command_group(target)
-            WarpCLI(cmd_group).cmdloop()
-    '''
-
-    WarpCLI(loader).cmdloop()
+    extension_mgr = ExtensionManager(extensions_dir)
+    extension_mgr.load_all(WarpCLI)
+    
+    cli = WarpCLI(loader, extension_mgr)
+    cli.cmdloop()
 
         
 

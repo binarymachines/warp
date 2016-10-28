@@ -1,3 +1,4 @@
+# Warp command group for M2 data center config
 ---
 commands:
         install_couchbase:
@@ -8,6 +9,13 @@ commands:
 
         install_elasticsearch:
                 line: ansible-playbook -u <user> -i inventory/ec2.py playbooks/elasticsearch.yml --limit tag_Name_<name>
+                defaults:
+                        - param: user
+                          value: ubuntu
+
+
+        install_mysql:
+                line: ansible-playbook -u <user> -i inventory/ec2.py playbooks/ec2_mysql.yml --limit tag_Name_<name>
                 defaults:
                         - param: user
                           value: ubuntu

@@ -1,0 +1,10 @@
+# Default values for mysql config
+---
+mysql_user: mysql
+mysql_group: mysql
+mysql_conf_dir: /etc/mysql
+mysql_data_dir: /var/lib/mysql
+mysql_log_dir: /var/log/mysqld
+mysql_sock_dir: /var/run/mysqld
+mysql_root_passwd: relation4lDB
+mysql_upgrade_base_dir: /usr
