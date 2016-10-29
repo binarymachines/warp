@@ -1,0 +1,19 @@
+[mysqld]
+pid-file	= {{ mysql_sock_dir }}/mysqld.pid
+socket		= {{ mysql_sock_dir }}/mysqld.sock
+datadir		= {{ mysql_data_dir }}
+log-error	= {{ mysql_log_dir }}/error.log
+# Disabling symbolic-links is recommended to prevent assorted security risks
+symbolic-links=0
+[client]
+host     = localhost
+user     = {{ mysql_user }}
+password = {{ mysql_root_passwd }}
+socket   = {{ mysql_sock_dir }}/mysqld.sock
+[mysql_upgrade]
+host     = localhost
+user     = {{ mysql_user}}
+password = {{ mysql_root_passwd }}
+socket   = {{ mysql_sock_dir }}/mysqld.sock
+basedir  = {{ mysql_upgrade_base_dir }}
+

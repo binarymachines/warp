@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 
-def do_ext1(self, args):
+def _ext1(self, args):
+    '''No-op sample extension function'''
     print 'stub for dynamically loaded extension #1...'
 
 
-def do_ext2(self, args):
+def _ext2(self, args):
+    '''No-op sample extension function'''
     print 'stub for dynamically loaded extension #2...'    

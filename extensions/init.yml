@@ -2,9 +2,11 @@
 ---
 extension_modules:
         test:
-                - ext1
-                - ext2
-                
+                - _ext1
+                - _ext2
+
+        ax:
+                - _lsvars
                 
         
         

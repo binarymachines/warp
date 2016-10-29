@@ -35,8 +35,13 @@ import re
 from fnmatch import fnmatch
 from types import MethodType
 import logging
+from inspect import getmembers, isfunction
 
 
+EXTENSION_INIT_FILENAME = 'init.yml'
+CMD_METHOD_PREFIX = 'do'
+BORDER = '_________________________________________________________\n'
+MARQUEE_BORDER = '==========================================================\n'
 
 logger = logging.getLogger()
 handler = logging.StreamHandler()
@@ -45,6 +50,7 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
+
 
 
 class MissingEnvironmentVariableException(Exception):
@@ -66,81 +72,6 @@ def get_template_mgr_for_location(directory):
       j2env = jinja2.Environment(loader = jinja2.FileSystemLoader(directory))
       return JinjaTemplateManager(j2env)
 
-
-
-class PlaybookManager():
-      def __init__(self, user_id, ssh_keyfile, working_directory):
-          self.user_id = user_id
-          self.ssh_keyfile = ssh_keyfile
-          self.working_dir = working_directory
-          self.warp_template_dir = os.path.join(self.working_dir, 'warpfiles')
-          self.warp_template_mgr = get_template_mgr_for_location(self.warp_template_dir)
-          
-          _template_vars = []
-
-          
-      def _retrieve_template_variables(self, ansible_role):
-          pass
-
-    
-      @property
-      def template_variable_names(self):
-            return self._template_vars
-
-
-      @property
-      def warpfiles(self):
-          return None
-          
-
-      @property
-      def templates(self):
-          return None
-
-          
-
-          
-class Role():
-    def __init__(self, name):
-        self._name = name
-
-
-    @property
-    def name(self):
-        return self._name
-
-    
-    def add_task_config(self, yaml_config):
-        pass
-
-    
-    def add_default_values(self, yaml_config):
-        pass
-
-    
-    def add_dependencies(self):
-        pass
-
-    
-
-class RoleRegistry():
-    def __init__(self, working_directory):
-        self.roles = {}
-        role_dirs = os.listdir(os.path.join(os.getcwd(), 'roles'))
-        for dirname in role_dirs:
-            new_role = Role(dirname)
-            self.roles[new_role.name] = (new_role, os.path.join(os.getcwd(), 'roles', dirname))
-            #new_role.add_task_config()
-
-
-    
-    
-class Playbook():
-    def __init__(self):
-        self.roles = []
-
-    def add_role(self, role_name):
-        self.roles.append(role_name)
 
 
 
@@ -285,44 +216,66 @@ class CommandLoader(object):
 
 
 class MethodExtension(object):
-    def __init__(self, name, function, **kwargs):
+    def __init__(self, name, bound_method_name, function, **kwargs):
         self.name = name
+        self.bound_method_name = bound_method_name
         self.function = function        
 
+        
     def load(self, target_class):
-        setattr(target_class, self.name, MethodType(self.function, None, target_class))
+        setattr(target_class, self.bound_method_name, MethodType(self.function, None, target_class))
 
+    @property
+    def docstring(self):
+        return self.function.__doc__
         
     
 class ExtensionManager(object):
     def __init__(self, extensions_dir, **kwargs):
         sys.path.append(extensions_dir)
-
         
-        
-        
-        self.extensions = {}
-        extension_modules = [os.path.join(extensions_dir, f) for f in os.listdir(extensions_dir) if f.endswith('.py')]
+        self.registry = {}                
         extension_initfile_name = os.path.join(extensions_dir, 'init.yml')
         extension_config = None
-        with open(extension_initfile_name) as f:
-            extension_config = yaml.load(f)
-        prefix = 'do'
+        module_names = []
+        should_load_all = False
         
-        for module_name in extension_config.get('extension_modules'):
+        # if the initfile exists, only load the specified modules
+        if os.path.isfile(extension_initfile_name):
+            with open(extension_initfile_name) as f:
+                extension_config = yaml.load(f)
+            module_names = extension_config.get('extension_modules')
+            
+        # otherwise load all modules
+        else:
+            should_load_all = True
+            module_names = [f[0:-3] for f in os.listdir(extensions_dir) if f.endswith('.py')]
+                                    
+        for module_name in module_names:
+            extensions = {}
             dirmod = __import__('extensions.%s' % module_name)
             extmod = getattr(dirmod, module_name)
-            #mod = getattr(extmod, module_name)
-            for function_id in extension_config['extension_modules'][module_name]:
-                function_name = '_'.join([prefix, function_id])
-                bound_method_name = '_'.join([prefix, module_name, function_id])
-                function_obj = getattr(extmod, function_name)
-                mx = MethodExtension(bound_method_name, function_obj)
-                self.extensions[bound_method_name] = mx
-
+            
+            if should_load_all:
+                function_names = [f[0] for f in getmembers(extmod) if isfunction(f[1]) and f[0].startswith('_')]
+            else:
+                function_names =  extension_config['extension_modules'][module_name] or []
+                 
+                
+            for raw_function_name in function_names:
+                function_name = raw_function_name.lstrip('_')
+                bound_method_name = '_'.join([CMD_METHOD_PREFIX, module_name, function_name])
+                function_obj = getattr(extmod, raw_function_name)
+                mx = MethodExtension(function_name, bound_method_name, function_obj)
+                extensions[function_name] = mx
+                
+            self.registry[module_name] = extensions
+            
+                
     def load_all(self, target_class):
-        for (name, ext) in self.extensions.iteritems():
-            ext.load(target_class)
+        for extension_dict in self.registry.values():
+            for name, ext in extension_dict.iteritems():
+                ext.load(target_class)
 
                 
 class UserEntry():
@@ -384,6 +337,15 @@ def is_command_designator(cmd_target_string):
     return cmd_target_string.find('.') != -1
 
 
+def border():
+    return BORDER
+
+def marquee_border():
+    return MARQUEE_BORDER
+
+
+def header(title):
+    return '\n%s\n%s' % (title, marquee_border())
                     
 class WarpCLI(Cmd):
     def __init__(self, command_loader, extension_mgr):
@@ -424,16 +386,25 @@ class WarpCLI(Cmd):
 
                 
     def do_lsx(self, args):
-        '''List installed extensions'''
-        print 'stub command' 
+        '''List installed command extensions'''
 
-        
+        print header('Command extensions:')
+        for module_name, extension_dict in self.extension_manager.registry.iteritems():
+            print 'module: %s' % module_name
+            print 'functions:'
+            for key in extension_dict.keys():
+                print '    %s : %s' % (key, extension_dict[key].docstring or '')
+            print BORDER
         
     def do_shell(self, args):
         """Pass command to a system shell when line begins with '!'"""
         print 'executing shell command...'
         os.system(args)
 
+
+    def completedefault(self, text, line, begidx, endidx):
+        print 'completion stub'
+        
 
     def show_template_info(self, composer):
         print '[command-template]: %s' % composer.raw_cmd
@@ -504,22 +475,18 @@ class WarpCLI(Cmd):
                 command_selector = target_tuple[1]                
                 for group_name in target_group_names:
                     command_templates.extend(self.command_loader.load_command_templates_by_name_match(command_selector, group_name))
-
             else:
                 for group_name in target_group_names:
                     command_templates.extend(self.command_loader.load_command_templates_by_group(group_name))
                     
             for t in command_templates:                
                 self.process_command(t)
-
-
-    def do_x(self, args):
-        print 'command extension stub method.'
-
+                
         
     do_q = do_quit
 
-        
+
+    
 def read_env_var(var_name, mandatory=True):
     value = os.environ.get(var_name)
     if mandatory and not value:
