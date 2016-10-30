@@ -89,7 +89,34 @@ class Playbook():
         self.roles.append(role_name)
 
 
+        
+class ExtensionContext(object):
+    def __init__(self, extension_name, description, logger):
+        self.name = extension_name
+        self.description = description
+        self.logger = logger
 
+
+        
+class AnsibleExtensionContext(ExtensionContext):
+    def __init__(self, logger, **kwargs):
+        ExtensionContext.__init__(self, __name__, 'Ansible extension', logger)
+
+        self.playbook_dir = kwargs.get('playbook_directory')
+        if not os.path.isdir(self.playbook_dir):
+              raise InvalidPlaybookDirError(self.playbook_dir)
+
+        self.ansible_hosts = kwargs.get('ansible_hosts')
+
+
+        
+def __load__(description, logger, context_registry, **kwargs):
+    extension_name = __name__
+    print '### Loading extension %s...' % extension_name
+    if not context_registry.get(extension_name):
+        context = AnsibleExtensionContext(logger, kwargs)
+        context_registry.register(context, extension_name)
+        
 
 
 def _mkrole(self, args):
@@ -97,6 +124,8 @@ def _mkrole(self, args):
 
 
 def _lsroles(self, args):
+    '''List ansible roles'''
+    
     print 'stub lsroles extension function'
 
 

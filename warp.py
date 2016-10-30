@@ -53,11 +53,38 @@ logger.setLevel(logging.DEBUG)
 
 
 
+
+
+
 class MissingEnvironmentVariableException(Exception):
     def __init__(self, varname):
         Exception.__init__(self, 'Environment variable %s is not set.' % varname)
 
 
+
+    
+def load_config_var(value):
+      var = None
+      if not value:
+          pass
+      elif value.__class__.__name__ == 'list':
+          var = value
+      elif value.startswith('$'):
+          var = os.environ.get(value[1:])            
+          if not var:
+              raise MissingEnvironmentVarException(value[1:])
+      elif value.startswith('~%s' % os.path.sep):
+          home_dir = expanduser(value[0])
+          path_stub = value[2:]
+          var = os.path.join(home_dir, path_stub)
+      else:
+          var = value
+      return var   
+    
+
+    
+
+        
         
 class JinjaTemplateManager:
     def __init__(self, j2_environment):
@@ -533,8 +560,15 @@ def main():
     cmd_options['config'] = True if args.get('--config') else False
     cmd_options['list'] = True if args.get('ls') or args.get('<command_target>') == 'ls' else False
     
-    warpfiles_dir = os.path.join(os.getcwd(), 'warpfiles')
-    extensions_dir = os.path.join(os.getcwd(), 'extensions')
+    warp_home_dir = os.getcwd() # default is current directory
+    warp_initfile = 'warp.ini' # TODO: use a default constant instead of magic string
+    with open(warp_initfile) as f:
+        warp_config = yaml.load(f)
+        warp_home_dir = load_config_var(warp_config['globals']['warp_home'])
+        
+    warpfiles_dir = os.path.join(warp_home_dir, 'warpfiles')
+    extensions_dir = os.path.join(warp_home_dir, 'extensions')
+        
 
     loader = CommandLoader(warpfiles_dir)
     extension_mgr = ExtensionManager(extensions_dir)
