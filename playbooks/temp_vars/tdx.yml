@@ -1,0 +1,7 @@
+---
+# Default values for tdx project setup
+project_dir_link_dest: ~/tdx
+project_dir_link_src: /vagrant/workshop/Tictail/tdx
+couchbase_data_bucket: tdx_data
+remote_username: dexter
+couchbase_journal_bucket: tdx_oplogs
