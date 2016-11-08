@@ -1,12 +1,17 @@
 # Warp command group for M2 data center config
 ---
 commands:
-        couchbase-local:
+        couchbase-localvm:
                 line: ansible-playbook -u <user> -i <inventory> playbooks/couchbase.yml 
                 defaults:
                         - param: inventory
                           value: '"pipeline.tictailhq.com,"'
 
+        setup:
+                line: ansible-playbook -u <user> -i <inventory> playbooks/tdx_setup.yml
+                defaults:
+                        - param: inventory
+                          value: '"pipeline.tictailhq.com,"'
 
 
 

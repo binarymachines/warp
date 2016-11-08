@@ -1,0 +1,69 @@
+---
+
+globals:
+        project_dir: $TDX_HOME
+        service_module: tdx_services
+
+
+service_objects:
+
+        redshift:
+            class:
+                RedshiftServiceObject
+            init_params:
+                - name: host
+                  value: rs-core.production.tictail.io
+
+                - name: port
+                  value: 5439
+
+                - name: username
+                  value: readonly
+
+                - name: db_name
+                  value: analytics
+
+                - name: schema
+                  value: pgcore_orders
+                  
+
+        couchbase:      
+            class:
+                CouchbaseServiceObject
+            init_params:
+                - name: host
+                  value: localhost
+
+                - name: data_bucket_name
+                  value: {{ couchbase_data_bucket }}
+
+                - name: journal_bucket_name
+                  value: {{ couchbase_journal_bucket }}
+
+
+
+phase:
+        extract:
+                globals:
+                        logfile:
+                        lockfile:       
+                        redshift_host:
+                        redshift_port:
+                        redshift_db:
+                        redshift_schema:
+
+
+
+
+
+
+phase:
+        extract:
+                params:
+                        - name: page_size
+                          value: 10
+
+                          name: page_range
+                          value: 0-5
+
+

@@ -1,0 +1,27 @@
+---
+- hosts: all
+  sudo: yes
+
+  vars_files:
+    - temp_vars/tdx.yml
+
+  tasks:
+    - name: make softlink
+      file:
+        src={{ project_dir_link_src }} 
+        dest={{ project_dir_link_dest}} 
+        state=link
+        #owner={{ remote_username }}
+
+
+    - name: create METL init file from template
+      template: src=templates/metl.yml.j2 dest={{ project_dir_link_src }}/metl.yml mode=0664
+
+
+    - name: install python dependencies
+      pip: requirements={{ project_dir_link_src }}/requirements.txt
+
+
+   
+
+        
