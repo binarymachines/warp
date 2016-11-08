@@ -11,7 +11,7 @@
         src={{ project_dir_link_src }} 
         dest={{ project_dir_link_dest}} 
         state=link
-        #owner={{ remote_username }}
+        owner={{ remote_username }}
 
 
     - name: create METL init file from template
