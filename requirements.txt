@@ -1,7 +1,8 @@
-ansible==2.1.2.0
-boto==2.42.0
+PyYAML==3.12
+Jinja2==2.8
+ansible==2.2.0.0
 cffi==1.8.3
-cryptography==1.5.2
+cryptography==1.5.3
 docopt==0.6.2
 enum34==1.1.6
 idna==2.1
@@ -10,8 +11,6 @@ Jinja2==2.8
 MarkupSafe==0.23
 paramiko==2.0.2
 pyasn1==0.1.9
-pycparser==2.14
+pycparser==2.17
 pycrypto==2.6.1
-PyYAML==3.12
 six==1.10.0
-docopt==0.6.2

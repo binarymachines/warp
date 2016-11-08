@@ -72,7 +72,7 @@ def load_config_var(value):
       elif value.startswith('$'):
           var = os.environ.get(value[1:])            
           if not var:
-              raise MissingEnvironmentVarException(value[1:])
+              raise MissingEnvironmentVariableException(value[1:])
       elif value.startswith('~%s' % os.path.sep):
           home_dir = expanduser(value[0])
           path_stub = value[2:]
