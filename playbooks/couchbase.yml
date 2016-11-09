@@ -13,4 +13,25 @@
     - name: install couchbase
       apt: deb="~/couchbase-server-community_4.1.0-ubuntu14.04_amd64.deb"
       sudo: true
-        
+
+    - name: download couchbase client lib
+      get_url: url=http://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-2-amd64.deb dest=~
+
+    - name: install couchbase client lib
+      apt: deb="~/couchbase-release-1.0-2-amd64.deb"
+
+    - name: update package manager
+      apt:
+        update_cache=true
+
+
+    - name: install couchbase dev dependencies
+      apt: name={{ item }} state=installed
+      with_items:
+        - libcouchbase-dev
+        - build-essential
+        - python-dev
+
+
+    - name: install python language binding
+      pip: name=couchbase
