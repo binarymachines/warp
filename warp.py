@@ -37,6 +37,8 @@ from types import MethodType
 import logging
 from inspect import getmembers, isfunction
 
+from warp_common import Stack
+
 
 EXTENSION_INIT_FILENAME = 'init.yml'
 CMD_METHOD_PREFIX = 'do'
@@ -394,6 +396,7 @@ class WarpCLI(Cmd):
         Cmd.__init__(self)
         self.command_loader = command_loader
         self.extension_manager = extension_mgr
+        self.replay_stack = Stack()
         self.prompt = '[warp-> ' 
         
         
@@ -486,8 +489,12 @@ class WarpCLI(Cmd):
         answer = OptionPrompt('execute command?', options, 'y').show()
         if answer.lower() == 'y':        
             self.do_shell(final_command)
-            
+            replay_context = {}
+            replay_context['template'] = _command_template
+            replay_context['params'] = user_params
+            self.replay_stack.push(replay_context)
 
+            
 
     def infer_target_command_groups(self, group_selector_string):
         return [name for name in self.command_loader.group_names if fnmatch(name, group_selector_string)]
@@ -501,9 +508,9 @@ class WarpCLI(Cmd):
             cmd_tokens = selector.split('.')            
             group_string = cmd_tokens[0]
             cmd_string = cmd_tokens[1]
-            return (group_string, cmd_string)
+            return [group_string, cmd_string]
 
-        return (selector)
+        return [selector]
     
            
     def do_go(self, args):
@@ -524,8 +531,22 @@ class WarpCLI(Cmd):
                     
             for t in command_templates:                
                 self.process_command(t)
-                
+
+
+
+    def do_replay(self, args):
+        ''' Repopulates and re-runs the last command template.'''
+
+        if self.replay_stack.size():
+            replay_context  = self.replay_stack.pop()
+            composer = Composer(replay_context['template'])
+            params = replay_context['params']
+            
+            command_line = composer.build(params)
+            self.do_shell(command_line)
+
         
+                
     do_q = do_quit
 
 
