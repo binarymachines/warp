@@ -5,6 +5,7 @@
 
   roles:
     - common
+    - java
 
   tasks:
     - name: "FIX: ubuntu 16.04 LTS is missing some required modules"
@@ -23,3 +24,5 @@
            update_cache: yes
 
 
+    - name: install zookeeper
+      apt: name=zookeeperd state=present
