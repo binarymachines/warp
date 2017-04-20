@@ -1,0 +1,30 @@
+---
+- hosts: all
+  sudo: yes
+  roles:
+    - common
+
+  tasks:
+    - name: make sure wheel group exists
+      group:
+            name=wheel
+            state=present
+
+    - name: allow wheel group to have passwordless sudo
+      lineinfile: 
+            "dest=/etc/sudoers
+            state=present
+            regexp='^%wheel'
+            line='%wheel ALL=(ALL) NOPASSWD: ALL'
+            validate='/usr/sbin/visudo -cf %s'"
+
+    - name: create kafka user
+      user: 
+            name=kafka
+            state=present
+            createhome=yes
+            groups=wheel
+            append=yes
+
+ 
+ 
