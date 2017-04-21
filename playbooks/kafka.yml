@@ -26,5 +26,21 @@
             groups=wheel
             append=yes
 
+    - name: download kafka
+      become: "yes"
+      become_user: "kafka"
+      get_url:
+            url='http://mirror.cc.columbia.edu/pub/software/apache/kafka/0.8.2.1/kafka_2.11-0.8.2.1.tgz'
+            dest=/home/kafka
+
+
+    - name: untar kafka download
+      become: "yes"
+      become_user: "kafka"
+      unarchive: 
+             src='/home/kafka/kafka_2.11-0.8.2.1.tgz' 
+             dest=/home/kafka
+             remote_src=yes
+             extra_opts=['-xvzf']
  
  
