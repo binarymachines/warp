@@ -35,12 +35,6 @@
 
 
     - name: untar kafka download
-      become: "yes"
-      become_user: "kafka"
-      unarchive: 
-             src='/home/kafka/kafka_2.11-0.8.2.1.tgz' 
-             dest=/home/kafka
-             remote_src=yes
-             extra_opts=['-xvzf']
- 
- 
+      become: 'yes'
+      become_user: 'kafka'
+      command: tar -xvf kafka_2.11-0.8.2.1.tgz chdir=/home/kafka
