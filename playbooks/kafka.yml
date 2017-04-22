@@ -1,6 +1,5 @@
 ---
 - hosts: all
-  sudo: yes
   roles:
     - common
 
@@ -11,6 +10,7 @@
             state=present
 
     - name: allow wheel group to have passwordless sudo
+      become: "yes"
       lineinfile: 
             "dest=/etc/sudoers
             state=present
@@ -38,3 +38,16 @@
       become: 'yes'
       become_user: 'kafka'
       command: tar -xvf kafka_2.11-0.8.2.1.tgz chdir=/home/kafka
+
+      
+    - name: load config variables
+      include_vars: kafka_vars.yml
+
+
+    - name: populate config template
+      become: 'yes'
+      become_user: 'kafka'
+      template:
+            src='templates/kafka.server.properties.j2'
+            dest='/home/kafka/kafka.server.properties'
+            owner='kafka'

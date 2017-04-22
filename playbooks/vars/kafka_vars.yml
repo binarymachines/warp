@@ -1,0 +1,5 @@
+# Default values for mysql config
+---
+zookeeper_host: 54.71.110.209
+zookeeper_port: 2181
+
