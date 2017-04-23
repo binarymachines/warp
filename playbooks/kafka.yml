@@ -1,16 +1,25 @@
 ---
 - hosts: all
+  gather_facts: no
   roles:
     - common
 
-  tasks:
+  pre_tasks:
+    - name: "FIX: ubuntu 16.04 LTS is missing some required modules"
+      raw: apt-get install python-minimal aptitude -y
+      become: true
+
+    - name: gather facts
+      setup:
+
     - name: make sure wheel group exists
+      become: true
       group:
             name=wheel
             state=present
 
     - name: allow wheel group to have passwordless sudo
-      become: "yes"
+      become: true
       lineinfile: 
             "dest=/etc/sudoers
             state=present
@@ -19,6 +28,7 @@
             validate='/usr/sbin/visudo -cf %s'"
 
     - name: create kafka user
+      become: true
       user: 
             name=kafka
             state=present
@@ -27,17 +37,27 @@
             append=yes
 
     - name: download kafka
-      become: "yes"
+      become: true
       become_user: "kafka"
       get_url:
             url='http://mirror.cc.columbia.edu/pub/software/apache/kafka/0.8.2.1/kafka_2.11-0.8.2.1.tgz'
-            dest=/home/kafka
+            dest=/home/kafka/kafka_2.11.tgz
 
 
     - name: untar kafka download
-      become: 'yes'
+      become: true
       become_user: 'kafka'
-      command: tar -xvf kafka_2.11-0.8.2.1.tgz chdir=/home/kafka
+      command: tar -xvf kafka_2.11.tgz -C /opt/local chdir=/home/kafka
+
+
+    - name: create symlink to install dir
+      become: true
+      file:
+            src=/opt/local/kafka_2.11-0.8.2.1
+            dest=/opt/local/kafka
+            state=link
+            owner=kafka
+            group=kafka
 
       
     - name: load config variables
@@ -45,9 +65,10 @@
 
 
     - name: populate config template
-      become: 'yes'
+      become: true
       become_user: 'kafka'
       template:
             src='templates/kafka.server.properties.j2'
-            dest='/home/kafka/kafka.server.properties'
+            dest='/opt/local/kafka/config/server.properties'
+            mode='0644'
             owner='kafka'
