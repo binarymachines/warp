@@ -3,6 +3,7 @@
   gather_facts: no
   roles:
     - common
+    - java
 
   pre_tasks:
     - name: "FIX: ubuntu 16.04 LTS is missing some required modules"
@@ -11,6 +12,12 @@
 
     - name: gather facts
       setup:
+
+  tasks:      
+    - name: add repository
+      become: true
+      apt_repository: repo='ppa:webupd8team/java'
+
 
     - name: make sure wheel group exists
       become: true

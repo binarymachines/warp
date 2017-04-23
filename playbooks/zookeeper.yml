@@ -1,23 +1,26 @@
 ---
 - hosts: all
   gather_facts: no
-  sudo: yes
 
   roles:
     - common
     - java
 
-  tasks:
+  pre_tasks:
     - name: "FIX: ubuntu 16.04 LTS is missing some required modules"
       raw: apt-get install python-minimal aptitude -y
       become: true
       become_user: root
       become_method: sudo 
 
+    - name: gather facts
+      setup:
+
+  tasks:
     - name: add repository
       apt_repository: repo='ppa:webupd8team/java'
       become: true
-      become_user: root
+
 
     - name: update apt packages
       apt: 
@@ -26,3 +29,15 @@
 
     - name: install zookeeper
       apt: name=zookeeperd state=present
+
+
+    - name: load config variables
+      include_vars: zookeeper_vars.yml
+
+    - name: populate config template
+      become: true
+      template:
+            src='templates/zoo.cfg.j2'
+            dest='/etc/zookeeper/conf/zoo.cfg'
+            owner='root'
+            mode='0644'

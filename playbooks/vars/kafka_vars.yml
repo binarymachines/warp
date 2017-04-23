@@ -1,5 +1,5 @@
-# Default values for mysql config
+# Default values for kafka config
 ---
-zookeeper_host: 54.71.110.209
+zookeeper_host: 172.31.25.101
 zookeeper_port: 2181
 

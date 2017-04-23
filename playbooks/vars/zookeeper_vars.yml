@@ -1,0 +1,13 @@
+# Default values for kafka config
+---
+
+servers:
+        - index: 1
+          address: 172.31.25.101
+
+        - index: 2
+          address: 172.31.12.195
+
+        - index: 3
+          address: 172.31.20.109
+

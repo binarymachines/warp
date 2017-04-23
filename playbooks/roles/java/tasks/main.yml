@@ -3,8 +3,10 @@
   apt_repository: repo='ppa:webupd8team/java' state=present
 
 - name: set license selected
+  become: true
   debconf: name='oracle-java8-installer' question='shared/accepted-oracle-license-v1-1' value='true' vtype='select'
 
 - name: install java 8
+  become: true
   apt: name=oracle-java8-installer state=latest update-cache=yes force=yes
-  sudo: yes
+
