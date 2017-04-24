@@ -50,12 +50,27 @@
             url='http://mirror.cc.columbia.edu/pub/software/apache/kafka/0.8.2.1/kafka_2.11-0.8.2.1.tgz'
             dest=/home/kafka/kafka_2.11.tgz
 
+    - name: create parent of final install directory
+      become: true
+      file: 
+            name=/opt/local
+            state=directory
+
 
     - name: untar kafka download
       become: true
-      become_user: 'kafka'
-      command: tar -xvf kafka_2.11.tgz -C /opt/local chdir=/home/kafka
+      command: tar --overwrite -xvf kafka_2.11.tgz -C /opt/local
+            chdir=/home/kafka
 
+
+    - name: set ownership on final install directory
+      become: true
+      file:
+            name=/opt/local/kafka_2.11-0.8.2.1
+            state=directory
+            owner=kafka
+            group=kafka
+            recurse=yes 
 
     - name: create symlink to install dir
       become: true

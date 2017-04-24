@@ -1,5 +1,6 @@
 ---
 - name: add repo for java 8
+  become: true
   apt_repository: repo='ppa:webupd8team/java' state=present
 
 - name: set license selected
