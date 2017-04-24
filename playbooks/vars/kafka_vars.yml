@@ -1,5 +1,9 @@
 # Default values for kafka config
 ---
-zookeeper_host: 172.31.25.101
-zookeeper_port: 2181
+
+# zookeeper_nodes should be a comma-delimited list of address:port entries where
+# each entry is a zookeeper IP and the port on which it listens.
+#
+zookeeper_nodes: 172.31.25.101:2181,172.31.12.195:2181,172.31.20.109:2181
+
 
