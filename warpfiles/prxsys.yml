@@ -1,0 +1,8 @@
+# Warp command group for Praxis data center admin tasks
+---
+commands:
+        add_user:
+                line: ansible-playbook -u <user> --private-key=~/.ssh/aws_riparian_e2.pem -i '<host>,' --extra-vars '{"userid":"<username>", "pubkey":"<keyfile>"}' playbooks/add_ec2user.yml
+                defaults:
+                        - param: user
+                          value: ubuntu
