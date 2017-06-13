@@ -1,0 +1,14 @@
+
+commands:
+        single_broker:
+                line: ansible-playbook -u <user> --private-key <key> -i inventory/ec2.py playbooks/kafka.yml --extra-vars "broker_id=<broker_id>" --limit tag_Name_<tag_name>
+                defaults:
+                        - param: user
+                          value: ubuntu
+
+                        - param: key
+                          value: ~/.ssh/aws_riparian_e2.pem
+
+
+                
+
