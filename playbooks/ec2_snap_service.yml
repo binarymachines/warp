@@ -1,0 +1,32 @@
+# 
+# Configure a new ec2 instance to host Snap microservices
+# 
+# ansible-playbook -i '<target_ip>,' --extra-vars '{"userid":"<new_username>", "pubkey":"<public key file>"}' add_ec2user.yml
+#
+#
+---
+- hosts: all
+  gather_facts: no
+  become: true
+  become_user: root 
+  vars:
+    deploy_key: "{{ deploy_key }}"
+
+
+- name: Install and configure nginx
+  hosts: all
+  vars:
+    remote_user: ubuntu    
+  become: true
+  become_user: root
+  roles:
+    - nginx
+
+  tasks:
+  - name: "FIX: ubuntu 16.04 LTS is missing some required modules"
+    raw: apt-get install python-minimal aptitude -y
+    become: true
+    become_user: root
+    
+
+

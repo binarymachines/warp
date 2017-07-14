@@ -6,3 +6,28 @@ commands:
                 defaults:
                         - param: user
                           value: ubuntu
+
+        install_mysql:
+                line: ansible-playbook -u <user> --private-key=~/.ssh/aws_riparian_e2.pem -i '<host>,' playbooks/ec2_mysql.yml
+                defaults:
+                        - param: user
+                          value: ubuntu
+
+
+        snaptest:
+                line: ansible-playbook -u <user> --private-key=~/.ssh/aws_riparian_e2.pem -i '<host>,' playbooks/ec2_snap_service.yml
+                defaults:
+                        - param: user
+                          value: ubuntu
+
+
+        zookeeper:
+                line: ansible-playbook -u <user> --private-key <key> -i inventory/ec2.py playbooks/zookeeper.yml --limit tag_Name_<tag_name>
+                defaults:
+                        - param: user
+                          value: ubuntu
+
+                        - param: key
+                          value: ~/.ssh/aws_riparian_e2.pem
+
+                          

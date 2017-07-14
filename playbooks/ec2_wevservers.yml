@@ -1,7 +1,0 @@
-- name: install and configure EC2 webservers
-  hosts: tag_Group_prod_web_cluster
-  remote_user: ubuntu
-  sudo: yes
-  roles:
-        - webservers
-        - wordpress

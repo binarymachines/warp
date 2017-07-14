@@ -1,0 +1,52 @@
+---
+# Variable setup.
+- name: Include OS-specific variables.
+  include_vars: "Ubuntu.yml"
+
+
+- name: Add PPA for Nginx.
+  apt_repository:
+    repo: 'ppa:nginx/{{ nginx_ppa_version }}'
+    state: present
+    update_cache: yes
+  register: nginx_ppa_added
+  when: nginx_ppa_use
+
+- name: Ensure nginx will reinstall if the PPA was just added.
+  apt:
+    name: nginx
+    state: present
+  when: nginx_ppa_added.changed
+
+
+# create the nginx system config dir
+- file:
+    path: /etc/nginx
+    state: directory
+    mode: 0744
+
+# Nginx setup.
+- name: Copy nginx configuration in place.
+  template:
+    src: "{{ nginx_conf_template }}"
+    dest: "{{ nginx_conf_file_path }}"
+    owner: root
+    group: "{{ root_group }}"
+    mode: 0644
+  notify:
+    - reload nginx
+
+
+- name: Ensure nginx is started and enabled to start at boot.
+  service: 
+      name: nginx 
+      state: started 
+      enabled: yes
+
+
+- name: Define nginx_user.
+  set_fact:
+    nginx_user: "{{ __nginx_user }}"
+  when: nginx_user is not defined
+
+

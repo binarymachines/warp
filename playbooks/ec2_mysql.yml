@@ -16,11 +16,15 @@
 
   tasks:
     - name: mysql-install | Create mysql group
+      become: true
+      become_user: root
       group:
         name={{ mysql_group }}
 
 
     - name: mysql-install | Create mysql user
+      become: true
+      become_user: root
       user:
         name={{ mysql_user }}
         group={{ mysql_group }}
@@ -28,6 +32,8 @@
 
 
     - name: mysql-install | Ensure mysql directories exist
+      become: true
+      become_user: root
       file:
         path="{{ item }}"
         state=directory
@@ -41,11 +47,15 @@
 
 
     - name: Set MySQL root password before installing
+      become: true
+      become_user: root
       debconf: name='mysql-server' question='mysql-server/root_password' value='{{ mysql_root_passwd}}'
       debconf: name='mysql-server' question='mysql-server/root_password_again' value='{{ mysql_root_passwd }}' vtype='password'
 
 
     - name: Install Mysql
+      become: true
+      become_user: root
       apt: name={{ item }} state=latest
       with_items:
         - mysql-server
@@ -53,6 +63,8 @@
 
 
     - name: mysql-install | Comfigure mysql
+      become: true
+      become_user: root
       template:
         src=templates/my.cnf.j2
         dest={{ mysql_conf_dir  }}/my.cnf
@@ -63,8 +75,10 @@
       
 
     - name: start mysql
+      become: true
+      become_user: root
       service: state=started name=mysql enabled=true   
-      sudo: true
+
 
 
     
