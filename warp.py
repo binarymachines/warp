@@ -25,9 +25,10 @@ Options:
 """
 
 
-from docopt import docopt
+import docopt
 import yaml
 import jinja2
+from snap import common
 from cmd import Cmd
 import os, sys
 from sys import stdin
@@ -54,15 +55,9 @@ logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
 
-
-
-
-
 class MissingEnvironmentVariableException(Exception):
     def __init__(self, varname):
         Exception.__init__(self, 'Environment variable %s is not set.' % varname)
-
-
 
     
 def load_config_var(value):
@@ -83,10 +78,6 @@ def load_config_var(value):
           var = value
       return var   
     
-
-    
-
-        
         
 class JinjaTemplateManager:
     def __init__(self, j2_environment):
@@ -94,7 +85,6 @@ class JinjaTemplateManager:
         
     def get_template(self, filename):
         return self.environment.get_template(filename)
-        
 
 
 def get_template_mgr_for_location(directory):
@@ -108,7 +98,6 @@ class ComposeException(Exception):
     def __init__(self, parameter_string):
         Exception.__init__(self, 'No value provided for command parameter %s in the passed args or the defaults.'
                            % parameter_string)
-        
 
 
 class Composer(object):
@@ -216,7 +205,7 @@ class CommandLoader(object):
             raise NoSuchGroupException(group_name)
 
         templates = []
-        for key, command_obj in self.command_template_groups[group_name]['commands'].iteritems():
+        for key, command_obj in self.command_template_groups[group_name]['commands'].items():
             templates.append(CommandTemplate(key, command_obj))
             
         return templates
@@ -250,11 +239,8 @@ class MethodExtension(object):
         self.bound_method_name = bound_method_name
         self.function = function        
 
-
-    
     def load(self, target_class):
         setattr(target_class, self.bound_method_name, MethodType(self.function, None, target_class))
-
         
     @property
     def docstring(self):
@@ -272,7 +258,7 @@ def is_valid_extension_name(fname):
 class ExtensionManager(object):
     def __init__(self, warp_yaml_cfg, **kwargs):
         self.registry = {}
-        print warp_yaml_cfg
+        print(common.jsonpretty(warp_yaml_cfg))
         warp_home_dir = load_config_var(warp_yaml_cfg['globals']['warp_home'])
         extensions_dir = os.path.join(warp_home_dir, 'extensions')
         sys.path.append(extensions_dir)
@@ -281,7 +267,8 @@ class ExtensionManager(object):
         should_load_all = False
         
         #  load context from the specified modules        
-        module_names = warp_yaml_cfg.get('extensions') or []
+        #module_names = warp_yaml_cfg.get('extensions') or []
+        module_names = []
             
         # otherwise load all modules
         '''
@@ -299,7 +286,7 @@ class ExtensionManager(object):
             for param in warp_yaml_cfg['extensions'][module_name]['init_params']:
                 extension_args[param['name']] = param['value']
 
-            print '### Extension params: %s' % extension_args
+            print('### Extension params: %s' % extension_args)
             extension_context = context_loader_function(warp_home_dir,
                                                         logger,
                                                         **extension_args)
@@ -318,7 +305,7 @@ class ExtensionManager(object):
                 
     def bind_methods_to_class(self, target_class):
         for extension_dict in self.registry.values():
-            for name, ext in extension_dict.iteritems():
+            for name, ext in extension_dict.items():
                 ext.load(target_class)
 
                 
@@ -336,7 +323,7 @@ class InputPrompt():
         self.default = default_value
 
     def show(self):        
-        result = raw_input(self.prompt).strip()
+        result = input(self.prompt).strip()
         if not result:
             result = self.default
         return result
@@ -359,7 +346,7 @@ class OptionPrompt(object):
                 display_options.append(o)
 
         prompt_text = '%s %s  : ' % (self.prompt_string, ','.join(display_options))
-        result = raw_input(prompt_text).strip()
+        result = input(prompt_text).strip()
         
         if not result: # user did not choose a value
             result = self.default_value
@@ -373,7 +360,7 @@ class Notifier():
         self.info = info_string
 
     def show(self):
-        print '[%s]: %s' % (self.prompt, self.info)
+        print('[%s]: %s' % (self.prompt, self.info))
         
 
 
@@ -408,11 +395,11 @@ class WarpCLI(Cmd):
 
         
     def do_hello(self, args):
-        print 'Hello from the Warp CLI.'
+        print('Hello from the Warp CLI.')
 
 
     def do_quit(self, args):
-        print 'Warp CLI exiting.'
+        print('Warp CLI exiting.')
         raise SystemExit
 
     
@@ -423,53 +410,53 @@ class WarpCLI(Cmd):
             detail_mode = True
         for name in self.command_loader.group_names:
             if detail_mode:
-                print '%s:' % name
+                print('%s:' % name)
                 for template in self.command_loader.load_command_templates_by_group(name):
-                    print '    %s: %s' % (template.name, template.command_line)
+                    print('    %s: %s' % (template.name, template.command_line))
             else:
-                print name
+                print(name)
 
                 
     def do_lsx(self, args):
         '''List installed command extensions'''
 
-        print header('Command extensions:')
-        for module_name, extension_dict in self.extension_manager.registry.iteritems():
-            print 'module: %s' % module_name
-            print 'functions:'
+        print(header('Command extensions:'))
+        for module_name, extension_dict in self.extension_manager.registry.items():
+            print('module: %s' % module_name)
+            print('functions:')
             for key in extension_dict.keys():
-                print '    %s : %s' % (key, extension_dict[key].docstring or '')
-            print BORDER
+                print('    %s : %s' % (key, extension_dict[key].docstring or ''))
+            print(BORDER)
 
             
     def do_shell(self, args):
         """Pass command to a system shell when line begins with '!'"""
-        print 'executing shell command...'
+        print('executing shell command...')
         os.system(args)
 
 
     def completedefault(self, text, line, begidx, endidx):
-        print 'completion stub'
+        print('completion stub')
         
 
     def show_template_info(self, composer):
-        print '[command-template]: %s' % composer.raw_cmd
+        print('[command-template]: %s' % composer.raw_cmd)
         defaults_list = []
-        for name,value in composer.default_parameter_values.iteritems():
+        for name,value in composer.default_parameter_values.items():
             defaults_list.append('    %s: %s' % (name, value))
         defaults_display = '\n'.join(defaults_list)
-        print '[defaults]:\n%s' %  defaults_display
+        print('[defaults]:\n%s' %  defaults_display)
 
 
     def process_command(self, _command_template):
         composer = Composer(_command_template)
-        print '[command-template]: %s' % composer.raw_cmd
+        print('[command-template]: %s' % composer.raw_cmd)
 
         defaults_list = []
-        for name,value in composer.default_parameter_values.iteritems():
+        for name,value in composer.default_parameter_values.items():
             defaults_list.append('    %s: %s' % (name, value))
         defaults_display = '\n'.join(defaults_list)
-        print '[defaults]:\n%s' %  defaults_display
+        print('[defaults]:\n%s' %  defaults_display)
         
         answer = OptionPrompt('populate with default values?', ['y', 'n'], 'y').show()
 
@@ -483,7 +470,7 @@ class WarpCLI(Cmd):
             user_params[param_name] = new_param_value
 
         final_command = composer.build(user_params)
-        print'[command]: %s' % final_command
+        print('[command]: %s' % final_command)
 
         options = ['y', 'n']
         answer = OptionPrompt('execute command?', options, 'y').show()
@@ -494,7 +481,6 @@ class WarpCLI(Cmd):
             replay_context['params'] = user_params
             self.replay_stack.push(replay_context)
 
-            
 
     def infer_target_command_groups(self, group_selector_string):
         return [name for name in self.command_loader.group_names if fnmatch(name, group_selector_string)]
@@ -509,9 +495,8 @@ class WarpCLI(Cmd):
             group_string = cmd_tokens[0]
             cmd_string = cmd_tokens[1]
             return [group_string, cmd_string]
-
         return [selector]
-    
+
            
     def do_go(self, args):
         '''Runs one or more selected warp commands.'''
@@ -572,24 +557,22 @@ def load_command(group_name, cmd_name, group_dict):
 
     
 def load_command_group(group_name, group_dict):
-    print 'command group data: %s' % group_dict
-    print 'executing warp commands in group %s: %s' % (group_name, group_dict[group_name]['commands'].keys())
+    print('command group data: %s' % group_dict)
+    print('executing warp commands in group %s: %s' % (group_name, group_dict[group_name]['commands'].keys()))
 
     templates = []
-    for key, command_obj in group_dict[group_name]['commands'].iteritems():
+    for key, command_obj in group_dict[group_name]['commands'].items():
         templates.append(CommandTemplate(command_obj, group=group_name))
 
     return templates
         
 
 def do_xt(self, *args):
-    print 'running an extension command!'
-    
+    print('running an extension command!')
 
 
-
-def main():
-    args = docopt(__doc__)
+def main(args):    
+    print(common.jsonpretty(args))
 
     cmd_options = {}
     cmd_options['preview_mode'] = True if args.get('--preview') else False
@@ -602,7 +585,6 @@ def main():
     warp_config = None
     with open(warp_initfile) as f:
         warp_config = yaml.load(f)
-
 
     if not warp_config:
         raise Exception('missing warp.ini config file.')
@@ -617,8 +599,8 @@ def main():
     
     cli = WarpCLI(loader, extension_mgr)
     cli.cmdloop()
-
         
 
 if __name__ == '__main__':
-    main()
+    args = docopt.docopt(__doc__)
+    main(args)

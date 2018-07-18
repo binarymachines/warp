@@ -106,15 +106,15 @@ def __load__(warp_home_dir, logger, **kwargs):
 
         
 def _mkrole(self, args):
-    print 'stub mkrole extension function'
+    print('stub mkrole extension function')
 
 
 def _lsroles(self, args):
     '''List ansible roles'''
     
-    print 'stub lsroles extension function'
+    print('stub lsroles extension function')
 
 
 def _lsvars(self, args):
     '''List ansible variables'''      
-    print 'stub lsvars extension function'
+    print('stub lsvars extension function')
